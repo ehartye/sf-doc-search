@@ -122,7 +122,7 @@ sf-doc-search/
 │   └── SKILL.md                 # shared source of truth (read by both tools)
 ├── .claude-plugin/
 │   ├── plugin.json              # name, version, "skills":["./.claude/skills"]
-│   └── marketplace.json         # `/plugin marketplace add hartye/sf-doc-search`
+│   └── marketplace.json         # `/plugin marketplace add ehartye/sf-doc-search`
 ├── bin/sf-docs                  # Claude-only: CLI on Bash PATH (no global install)
 ├── cli/                         # engine — published to npm as `sf-docs`
 │   ├── src/
@@ -259,7 +259,7 @@ Body — decision flow the agent follows:
 - **`plugin.json`:** `{ name: "sf-doc-search", version, description,
   "skills": ["./.claude/skills"] }` — reuses the shared folder, no duplication.
 - **`marketplace.json`:** single-plugin marketplace pointing at `./`, enabling
-  `/plugin marketplace add hartye/sf-doc-search` → `/plugin install sf-doc-search`.
+  `/plugin marketplace add ehartye/sf-doc-search` → `/plugin install sf-doc-search`.
 - **npm:** `cli/` publishes as `sf-docs`; `bin/sf-docs` wraps the installed/
   bundled CLI so Claude users get bare-command + offline use without a global
   install.
