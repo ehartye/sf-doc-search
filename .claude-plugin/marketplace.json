@@ -1,0 +1,13 @@
+{
+  "name": "ehartye-plugins",
+  "owner": { "name": "ehartye" },
+  "plugins": [
+    {
+      "name": "sf-doc-search",
+      "source": "./",
+      "description": "Clean Salesforce documentation retrieval for Claude Code and GitHub Copilot.",
+      "version": "0.1.0",
+      "author": { "name": "ehartye" }
+    }
+  ]
+}
