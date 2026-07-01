@@ -85,6 +85,50 @@ export class BrowserManager {
     }
   }
 
+  /** POST JSON from inside a warmed page context. */
+  async postJsonInPage(url: string, body: unknown): Promise<any> {
+    const page = await this.page();
+    try {
+      return await page.evaluate(async ({ u, b }) => {
+        const res = await fetch(u, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(b),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
+        return res.json();
+      }, { u: url, b: body });
+    } finally {
+      await page.context().close();
+    }
+  }
+
+  /** Load the Help search page and capture the anonymous Coveo access_token from its requests. */
+  async captureCoveoToken(searchPageUrl: string): Promise<string> {
+    const page = await this.page();
+    let token: string | undefined;
+    page.on("request", (req) => {
+      const url = req.url();
+      if (url.includes("coveo") && url.includes("access_token=")) {
+        token = new URL(url).searchParams.get("access_token") ?? token;
+      }
+    });
+    try {
+      await page.goto(searchPageUrl, { waitUntil: "networkidle", timeout: 45_000 });
+      // Trigger a search so the token-bearing request fires if it hasn't yet.
+      const box = page.locator('input[type="search"], input[placeholder*="Search"]').first();
+      if (await box.count()) {
+        await box.fill("sharing");
+        await box.press("Enter");
+        await page.waitForTimeout(3000);
+      }
+      if (!token) throw new Error("Could not capture Coveo token");
+      return token;
+    } finally {
+      await page.context().close();
+    }
+  }
+
   async close(): Promise<void> {
     await this.browser?.close();
     this.browser = undefined;
