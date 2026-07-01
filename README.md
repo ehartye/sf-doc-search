@@ -61,22 +61,19 @@ npm run build
 
 ## Status (verified live)
 
-Working end-to-end against live Salesforce:
+All source paths work end-to-end against live Salesforce:
 
 - **Developer docs** — `fetch`, `catalog`, `toc` (Atlas JSON API; Akamai cleared).
 - **Component library** — `component <ns> <name>` (cx-router JSON).
+- **Salesforce Help** — `fetch` of articles (shadow-DOM body extracted) and
+  `search --source help` (Coveo discovery).
+- **Release notes** — `fetch` + `search --source release`.
 - **Trailhead** — `fetch` of module/unit pages.
-- **Help / release-notes discovery** — `search --source help|release` (Coveo).
 
 ## Known limitations
 
-- **Help / release-notes article *body* rendering is not yet working.** `search`
-  returns correct Help result URLs, but fetching a Help article renders the
-  Lightning shell without the shadow-DOM article body (the `/s/articleView`
-  route needs further reverse-engineering of Salesforce's article id → route
-  mapping and body selector). Tracked as the top follow-up.
-- Trailhead output includes minor JSON-LD/breadcrumb noise at the top that
-  should be stripped.
+- Help and Trailhead output includes a small amount of leading breadcrumb /
+  JSON-LD noise that could be trimmed further.
 - Relative cross-reference links inside developer-doc pages are emitted as-is
   (not rewritten to absolute browsable URLs); the provenance header carries the
   source URL.
