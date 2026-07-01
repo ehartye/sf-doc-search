@@ -48,4 +48,28 @@ describe("atlas source", () => {
     const toc = await fetchToc(browser, "apexcode");
     expect(toc).toEqual([{ id: "apex_intro_what_is_apex", text: "What is Apex?", href: "apex_intro_what_is_apex.htm" }]);
   });
+
+  it("falls back to the first TOC node with an href when ref.file is absent", async () => {
+    const browser = fakeBrowser({
+      "get_document/atlas.en-us.apexcode.meta": {
+        title: "Apex Developer Guide",
+        deliverable: "apexcode",
+        version: { doc_version: "262.0" },
+        toc: [{ id: "root", text: "Guide", children: [{ id: "intro", text: "Intro", a_attr: { href: "intro.htm" } }] }],
+      },
+      "get_document_content/apexcode/intro.htm/en-us/262.0": { title: "Intro", content: "<p>Body</p>" },
+    });
+    const res = await fetchAtlasDoc(browser, { longId: "atlas.en-us.apexcode.meta", deliverable: "apexcode", locale: "en-us" });
+    expect(res.url).toContain("/intro.htm/");
+    expect(res.markdown).toContain("Body");
+  });
+
+  it("uses meta.title when the content title is an empty string", async () => {
+    const browser = fakeBrowser({
+      "get_document/atlas.en-us.apexcode.meta": { title: "Apex Developer Guide", deliverable: "apexcode", version: { doc_version: "262.0" }, toc: [{ id: "x", text: "X", a_attr: { href: "x.htm" } }] },
+      "get_document_content/apexcode/x.htm/en-us/262.0": { title: "", content: "<p>hi</p>" },
+    });
+    const res = await fetchAtlasDoc(browser, { longId: "atlas.en-us.apexcode.meta", deliverable: "apexcode", locale: "en-us" });
+    expect(res.title).toBe("Apex Developer Guide");
+  });
 });

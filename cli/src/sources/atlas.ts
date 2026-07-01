@@ -20,21 +20,24 @@ export async function fetchAtlasDoc(browser: BrowserManager, ref: AtlasRef): Pro
   const docVersion = ref.docVersion ?? meta.version?.doc_version;
   if (!docVersion) throw new Error(`Could not resolve doc version for ${ref.deliverable}`);
 
-  // If no explicit file, default to the deliverable's landing page (first TOC entry).
+  // If no explicit file, default to the first TOC node that has an href
+  // (top-level nodes are often container-only, with the page one level down).
   let file = ref.file;
-  if (!file && meta.toc?.length) file = meta.toc[0].a_attr?.href;
+  if (!file && meta.toc?.length) {
+    file = flattenToc(meta.toc).find((n) => n.a_attr?.href)?.a_attr?.href;
+  }
   if (!file) throw new Error(`No content file for ${ref.deliverable}`);
 
   const url = getContentUrl(ref.deliverable, file, ref.locale, docVersion);
   const content = await browser.fetchJsonInPage(url);
   return {
-    title: content.title ?? meta.title,
+    title: content.title || meta.title,
     url,
     source: "atlas",
     version: docVersion,
     html: content.content ?? "",
     markdown: htmlToMarkdown(content.content ?? "", {
-      title: content.title ?? meta.title,
+      title: content.title || meta.title,
       url,
       source: "atlas",
       version: docVersion,

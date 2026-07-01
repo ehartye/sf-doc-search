@@ -8,6 +8,12 @@ describe("component source", () => {
     );
   });
 
+  it("url-encodes component ref fields", () => {
+    expect(componentUrl({ namespace: "ns&x", name: "a b", model: "lwc" })).toBe(
+      "https://developer.salesforce.com/cx-router/components?model=lwc&namespace=ns%26x&component=a%20b",
+    );
+  });
+
   it("formats the component JSON into markdown with attributes", async () => {
     const browser = {
       fetchJsonInPage: vi.fn(async () => ({

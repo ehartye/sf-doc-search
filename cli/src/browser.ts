@@ -89,6 +89,8 @@ export class BrowserManager {
   async postJsonInPage(url: string, body: unknown): Promise<any> {
     const page = await this.page();
     try {
+      // Warm a real Salesforce origin so the cross-origin POST isn't fired from an opaque about:blank origin.
+      await page.goto("https://help.salesforce.com/s/", { waitUntil: "domcontentloaded", timeout: 45_000 });
       return await page.evaluate(async ({ u, b }) => {
         const res = await fetch(u, {
           method: "POST",
@@ -114,14 +116,20 @@ export class BrowserManager {
       }
     });
     try {
-      await page.goto(searchPageUrl, { waitUntil: "networkidle", timeout: 45_000 });
-      // Trigger a search so the token-bearing request fires if it hasn't yet.
-      const box = page.locator('input[type="search"], input[placeholder*="Search"]').first();
-      if (await box.count()) {
-        await box.fill("sharing");
-        await box.press("Enter");
-        await page.waitForTimeout(3000);
+      try {
+        await page.goto(searchPageUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      } catch {
+        // Navigation-settle can hang on Salesforce background XHR; tolerate it if we still capture a token below.
       }
+      if (!token) {
+        const box = page.locator('input[type="search"], input[placeholder*="Search"]').first();
+        if (await box.count()) {
+          await box.fill("sharing");
+          await box.press("Enter");
+        }
+      }
+      // Poll up to ~10s for the token-bearing Coveo request to fire.
+      for (let i = 0; i < 20 && !token; i++) await page.waitForTimeout(500);
       if (!token) throw new Error("Could not capture Coveo token");
       return token;
     } finally {

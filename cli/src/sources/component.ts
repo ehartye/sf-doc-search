@@ -2,7 +2,8 @@ import type { BrowserManager } from "../browser";
 import type { ComponentRef, DocResult } from "../types";
 
 export function componentUrl(ref: ComponentRef): string {
-  return `https://developer.salesforce.com/cx-router/components?model=${ref.model}&namespace=${ref.namespace}&component=${ref.name}`;
+  const q = encodeURIComponent;
+  return `https://developer.salesforce.com/cx-router/components?model=${q(ref.model)}&namespace=${q(ref.namespace)}&component=${q(ref.name)}`;
 }
 
 export async function fetchComponent(browser: BrowserManager, ref: ComponentRef): Promise<DocResult> {
