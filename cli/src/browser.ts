@@ -105,14 +105,24 @@ export class BrowserManager {
     }
   }
 
-  /** Load the Help search page and capture the anonymous Coveo access_token from its requests. */
+  /**
+   * Load the Help search page and capture the anonymous Coveo JWT. The token is
+   * returned in the RESPONSE BODY of the Aura action `Search_CoveoTokenGenerator.getToken`
+   * (an outer `{actions:[{returnValue}]}` envelope whose `returnValue` is a JSON string
+   * containing `{ platformUri, token }`), not in any request URL.
+   */
   async captureCoveoToken(searchPageUrl: string): Promise<string> {
     const page = await this.page();
     let token: string | undefined;
-    page.on("request", (req) => {
-      const url = req.url();
-      if (url.includes("coveo") && url.includes("access_token=")) {
-        token = new URL(url).searchParams.get("access_token") ?? token;
+    page.on("response", async (res) => {
+      if (token || !res.url().includes("Search_CoveoTokenGenerator.getToken")) return;
+      try {
+        const outer = JSON.parse(await res.text());
+        const rv = outer?.actions?.[0]?.returnValue;
+        const inner = typeof rv === "string" ? JSON.parse(rv) : rv;
+        if (inner?.token) token = inner.token as string;
+      } catch {
+        // Non-JSON or unexpected shape — keep waiting.
       }
     });
     try {
@@ -121,15 +131,28 @@ export class BrowserManager {
       } catch {
         // Navigation-settle can hang on Salesforce background XHR; tolerate it if we still capture a token below.
       }
-      if (!token) {
-        const box = page.locator('input[type="search"], input[placeholder*="Search"]').first();
-        if (await box.count()) {
-          await box.fill("sharing");
-          await box.press("Enter");
+      // Let the Coveo search component bootstrap before interacting, otherwise the
+      // Enter keypress fires before its handler is attached and no token is generated.
+      await page.waitForTimeout(4000);
+      // Trigger a search so the token generator runs (it may also fire on load).
+      // The page has multiple search inputs; pick the first VISIBLE one. Tolerate
+      // failure — the token can also be generated during page bootstrap.
+      try {
+        const boxes = page.locator('input#search-field, input[type="search"], input[placeholder*="Search" i]');
+        const n = await boxes.count();
+        for (let i = 0; i < n; i++) {
+          const b = boxes.nth(i);
+          if (await b.isVisible().catch(() => false)) {
+            await b.fill("sharing");
+            await b.press("Enter");
+            break;
+          }
         }
+      } catch {
+        // Interaction failed; keep polling in case the token fired on load.
       }
-      // Poll up to ~10s for the token-bearing Coveo request to fire.
-      for (let i = 0; i < 20 && !token; i++) await page.waitForTimeout(500);
+      // Poll up to ~15s for the token-bearing Aura response to arrive.
+      for (let i = 0; i < 30 && !token; i++) await page.waitForTimeout(500);
       if (!token) throw new Error("Could not capture Coveo token");
       return token;
     } finally {

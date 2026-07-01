@@ -38,8 +38,11 @@ export async function coveoSearch(
     aq: objectTypeFilter(source),
     numberOfResults,
   };
+  // Use the Salesforce-proxied Coveo search endpoint (same-origin to help.salesforce.com,
+  // which postJsonInPage warms first). The token's platformUri points here, not to
+  // platform.cloud.coveo.com directly.
   const raw = await browser.postJsonInPage(
-    `https://platform.cloud.coveo.com/rest/search/v2?access_token=${encodeURIComponent(token)}`,
+    `https://help.salesforce.com/services/apexrest/coveo/analytics/rest/search/v2?organizationId=org62salesforce&access_token=${encodeURIComponent(token)}`,
     body,
   );
   return parseCoveoResults(raw);
