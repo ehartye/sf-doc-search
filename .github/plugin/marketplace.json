@@ -1,5 +1,5 @@
 {
-  "name": "ehartye-copilot-plugins",
+  "name": "sf-doc-search-marketplace",
   "owner": { "name": "ehartye" },
   "metadata": {
     "description": "Clean Salesforce documentation retrieval for GitHub Copilot.",

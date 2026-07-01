@@ -22,7 +22,7 @@ agent gets real Markdown instead of empty bodies or shadow-DOM soup.
 
 ```
 /plugin marketplace add ehartye/sf-doc-search
-/plugin install sf-doc-search
+/plugin install sf-doc-search@sf-doc-search-marketplace
 ```
 
 Then build the bundled CLI once (or `npm i -g sf-docs`):
@@ -50,7 +50,7 @@ the same schema as the Claude Code marketplace):
 
 ```
 copilot plugin marketplace browse ehartye/sf-doc-search
-copilot plugin install sf-doc-search@ehartye-copilot-plugins
+copilot plugin install sf-doc-search@sf-doc-search-marketplace
 ```
 
 > **Preview caveat:** Copilot Agent Plugins are a preview feature and the exact
