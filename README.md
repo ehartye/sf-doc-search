@@ -33,9 +33,34 @@ cd cli && npm install && npm run build
 
 ## Install — GitHub Copilot / VS Code
 
-1. Install the CLI: `npm i -g sf-docs` (or rely on `npx sf-docs`).
-2. Place this repo's `.claude/skills/sf-docs/` in your workspace (Copilot
-   auto-discovers `.claude/skills/`).
+First install the CLI: `npm i -g sf-docs` (or rely on `npx sf-docs`). Then pick a
+distribution path:
+
+**A. Agent Skill (simplest, well-supported).** Copilot (CLI, coding/cloud agent,
+code review, and agent mode in VS Code / JetBrains) auto-discovers the skill.
+
+- Install from this repo: `gh skill install ehartye/sf-doc-search sf-docs`
+  (requires GitHub CLI ≥ 2.90.0; preview with `gh skill preview ehartye/sf-doc-search sf-docs`).
+- Or drop the repo into your workspace — Copilot scans both `.github/skills/` and
+  `.claude/skills/`, and this repo ships the skill in both.
+
+**B. Agent Plugin marketplace (Preview).** This repo also exposes a Copilot plugin
+marketplace (`.github/plugin.json` + `.github/plugin/marketplace.json`, which use
+the same schema as the Claude Code marketplace):
+
+```
+copilot plugin marketplace browse ehartye/sf-doc-search
+copilot plugin install sf-doc-search@ehartye-copilot-plugins
+```
+
+> **Preview caveat:** Copilot Agent Plugins are a preview feature and the exact
+> manifest location (plugin root vs `.github/`) is still stabilizing. If
+> `copilot plugin install` can't resolve the manifest, fall back to path **A**
+> (`gh skill install`), which is fully supported, and adjust the manifest paths to
+> match your installed `copilot` CLI version.
+
+> **Maintainers:** `.github/skills/sf-docs/SKILL.md` is a mirror of
+> `.claude/skills/sf-docs/SKILL.md` — keep the two in sync when editing the skill.
 
 ## CLI usage
 

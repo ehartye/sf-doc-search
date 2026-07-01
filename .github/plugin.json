@@ -1,0 +1,9 @@
+{
+  "name": "sf-doc-search",
+  "description": "Retrieve clean Salesforce documentation (dev docs, Help, Trailhead, release notes) without shadow-DOM/render friction.",
+  "version": "0.1.0",
+  "author": { "name": "ehartye" },
+  "license": "MIT",
+  "keywords": ["salesforce", "documentation", "apex", "lwc", "trailhead"],
+  "skills": ["./skills/sf-docs"]
+}
