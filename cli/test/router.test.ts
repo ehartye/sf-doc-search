@@ -34,4 +34,22 @@ describe("route", () => {
     const r = route("https://developer.salesforce.com/docs/component-library/bundle/lightning-button");
     expect(r.component).toEqual({ namespace: "lightning", name: "button", model: "lwc" });
   });
+
+  it("keeps hyphens in multi-word component names", () => {
+    expect(
+      route("https://developer.salesforce.com/docs/component-library/bundle/lightning-tree-grid").component,
+    ).toEqual({ namespace: "lightning", name: "tree-grid", model: "lwc" });
+  });
+
+  it("returns generic for malformed http input instead of throwing", () => {
+    expect(route("https://").source).toBe("generic");
+  });
+
+  it("lowercases atlas segments from an uppercase shorthand id", () => {
+    expect(route("ATLAS.EN-US.APEXCODE.META").atlas).toMatchObject({
+      deliverable: "apexcode",
+      locale: "en-us",
+      longId: "atlas.en-us.apexcode.meta",
+    });
+  });
 });

@@ -5,18 +5,24 @@ const ATLAS_LONG = /^atlas\.([a-z-]+)\.(?:(\d+\.\d+)\.)?([a-z0-9_]+)\.meta$/i;
 function parseAtlasFromPath(pathname: string): AtlasRef | undefined {
   // /docs/atlas.en-us[.262.0].apexcode.meta/apexcode/apex_intro_what_is_apex.htm
   const parts = pathname.split("/").filter(Boolean); // [docs, atlas..., apexcode, file.htm]
-  const idx = parts.findIndex((p) => p.startsWith("atlas."));
+  const idx = parts.findIndex((p) => p.toLowerCase().startsWith("atlas."));
   if (idx === -1) return undefined;
   const m = ATLAS_LONG.exec(parts[idx]);
   if (!m) return undefined;
   const [, locale, docVersion, deliverable] = m;
   const file = parts.slice(idx + 1).find((p) => p.endsWith(".htm"));
-  return { longId: parts[idx], deliverable, file, locale, docVersion };
+  return {
+    longId: parts[idx].toLowerCase(),
+    deliverable: deliverable.toLowerCase(),
+    file,
+    locale: locale.toLowerCase(),
+    docVersion,
+  };
 }
 
 function parseComponent(pathname: string): ComponentRef | undefined {
   // .../component-library/bundle/lightning-button  OR  .../bundle/aura/lightning-card
-  const m = /component-library\/bundle\/(?:(aura|lwc)\/)?([a-z]+)-([a-z0-9_]+)/i.exec(pathname);
+  const m = /component-library\/bundle\/(?:(aura|lwc)\/)?([a-z]+)-([a-z0-9_-]+)/i.exec(pathname);
   if (!m) return undefined;
   const model = (m[1]?.toLowerCase() as "aura" | "lwc") ?? "lwc";
   return { namespace: m[2].toLowerCase(), name: m[3].toLowerCase(), model };
@@ -32,7 +38,12 @@ export function route(input: string): RouteResult {
       return {
         source: "atlas",
         url: trimmed,
-        atlas: { longId: trimmed, deliverable: m[3], locale: m[1], docVersion: m[2] },
+        atlas: {
+          longId: trimmed.toLowerCase(),
+          deliverable: m[3].toLowerCase(),
+          locale: m[1].toLowerCase(),
+          docVersion: m[2],
+        },
       };
     }
     const m = /^([a-z0-9_]+)\/([a-z0-9_]+\.htm)$/i.exec(trimmed);
@@ -46,7 +57,12 @@ export function route(input: string): RouteResult {
     return { source: "generic", url: trimmed };
   }
 
-  const u = new URL(trimmed);
+  let u: URL;
+  try {
+    u = new URL(trimmed);
+  } catch {
+    return { source: "generic", url: trimmed };
+  }
   const host = u.hostname.toLowerCase();
   const path = u.pathname;
 
