@@ -64,6 +64,13 @@ export class BrowserManager {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
       const loc = page.locator(selector).first();
       await loc.waitFor({ state: "attached", timeout: timeoutMs });
+      // The container often attaches before its async content hydrates; poll until it
+      // has meaningful text (up to ~12s) so we don't extract an empty shell.
+      for (let i = 0; i < 24; i++) {
+        const len = (await loc.innerText().catch(() => "")).trim().length;
+        if (len > 150) break;
+        await page.waitForTimeout(500);
+      }
       const html = await loc.evaluate((el) => (el as HTMLElement).innerHTML);
       const title = await page.title();
       return { html, title };

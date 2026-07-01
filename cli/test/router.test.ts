@@ -35,6 +35,21 @@ describe("route", () => {
     expect(r.component).toEqual({ namespace: "lightning", name: "button", model: "lwc" });
   });
 
+  it("normalizes a Coveo Help_DocContent clickUri to the .htm articleView URL", () => {
+    const r = route("https://help.salesforce.com/Help_DocContent?id=platform.security_about_sharing_rules&language=en_us&release=262.0.0");
+    expect(r.source).toBe("help");
+    expect(r.url).toBe(
+      "https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules.htm&type=5&language=en_US&release=262.0.0",
+    );
+  });
+
+  it("does not double-append .htm when the id already has it", () => {
+    const r = route("https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules.htm&type=5");
+    expect(r.url).toBe(
+      "https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules.htm&type=5&language=en_US",
+    );
+  });
+
   it("keeps hyphens in multi-word component names", () => {
     expect(
       route("https://developer.salesforce.com/docs/component-library/bundle/lightning-tree-grid").component,

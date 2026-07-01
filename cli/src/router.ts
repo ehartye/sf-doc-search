@@ -79,7 +79,18 @@ export function route(input: string): RouteResult {
   if (host === "help.salesforce.com") {
     const id = u.searchParams.get("id") ?? "";
     const source: Source = id.startsWith("release-notes.") ? "release" : "help";
-    return { source, url: trimmed };
+    // Normalize any Help URL (e.g. Coveo's Help_DocContent clickUri, whose id lacks
+    // the .htm suffix) to the canonical Lightning articleView URL, the only form
+    // that renders the article body.
+    let url = trimmed;
+    if (id) {
+      const htmId = id.endsWith(".htm") ? id : `${id}.htm`;
+      const release = u.searchParams.get("release");
+      url =
+        `https://help.salesforce.com/s/articleView?id=${htmId}&type=5&language=en_US` +
+        (release ? `&release=${release}` : "");
+    }
+    return { source, url };
   }
 
   if (host === "releasenotes.docs.salesforce.com") {

@@ -2,8 +2,9 @@ import type { BrowserManager } from "../browser";
 import type { DocResult, Source } from "../types";
 import { htmlToMarkdown } from "../markdown";
 
-// The Lightning article body container (pierced via Playwright locator).
-export const HELP_ARTICLE_SELECTOR = "article, .slds-rich-text-editor__output, .test-id__article-body, .content";
+// The Lightning article longform body container (pierced via Playwright locator).
+// `.slds-text-longform` is the article body region on help.salesforce.com articleView pages.
+export const HELP_ARTICLE_SELECTOR = ".slds-text-longform, .test-id__article-body, article";
 
 export async function fetchHelp(browser: BrowserManager, url: string, source: Source): Promise<DocResult> {
   let html: string;
