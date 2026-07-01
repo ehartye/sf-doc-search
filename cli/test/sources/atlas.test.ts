@@ -37,10 +37,10 @@ describe("atlas source", () => {
 
   it("lists the catalog deliverables", async () => {
     const browser = fakeBrowser({
-      get_index: { content: [{ id: "apexcode", key: "Apex Developer Guide", value: "atlas.en-us.262.0.apexcode.meta" }] },
+      get_index: { content: [{ id: "atlas.en-us.262.0.apexcode.meta", key: "en-us", value: { deliverable: "apexcode", title: "Apex Developer Guide" } }] },
     });
     const cat = await listCatalog(browser);
-    expect(cat[0]).toMatchObject({ deliverable: "apexcode", title: "Apex Developer Guide" });
+    expect(cat[0]).toMatchObject({ deliverable: "apexcode", title: "Apex Developer Guide", longId: "atlas.en-us.262.0.apexcode.meta" });
   });
 
   it("returns a flattened TOC", async () => {

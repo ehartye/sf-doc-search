@@ -49,7 +49,13 @@ export interface CatalogEntry { deliverable: string; title: string; longId: stri
 
 export async function listCatalog(browser: BrowserManager): Promise<CatalogEntry[]> {
   const idx = await browser.fetchJsonInPage(getIndexUrl());
-  return (idx.content ?? []).map((c: any) => ({ deliverable: c.id, title: c.key, longId: c.value }));
+  // get_index shape: { content: [{ id: "atlas.<locale>.<ver>.<deliv>.meta",
+  //   key: "<locale>", value: { deliverable, title, ... } }] }
+  return (idx.content ?? []).map((c: any) => ({
+    deliverable: c.value?.deliverable ?? c.id,
+    title: c.value?.title ?? "",
+    longId: c.id,
+  }));
 }
 
 export interface TocEntry { id: string; text: string; href?: string; }
