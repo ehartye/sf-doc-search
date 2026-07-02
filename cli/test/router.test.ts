@@ -4,7 +4,7 @@ import { route } from "../src/router";
 describe("route", () => {
   const cases: Array<[string, string]> = [
     ["https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_intro_what_is_apex.htm", "atlas"],
-    ["https://developer.salesforce.com/docs/platform/lwc/guide/intro.html", "atlas-lwr"],
+    ["https://developer.salesforce.com/docs/platform/lwc/guide/intro.html", "lwr"],
     ["https://developer.salesforce.com/docs/component-library/bundle/lightning-button", "component"],
     ["https://developer.salesforce.com/docs/component-library/documentation/en/lightning-component-reference", "component"],
     ["https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules&type=5", "help"],

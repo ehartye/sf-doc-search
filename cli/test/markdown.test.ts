@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { htmlToMarkdown } from "../src/markdown";
+import { htmlToMarkdown, todayISO } from "../src/markdown";
 
 describe("htmlToMarkdown", () => {
   const meta = { title: "What is Apex?", url: "https://developer.salesforce.com/x", source: "atlas" as const, version: "262.0" };
@@ -40,5 +40,19 @@ describe("htmlToMarkdown", () => {
     const html = `<table><tr><th>A</th><th>B</th><th>C</th></tr><tr><td>1</td></tr></table>`;
     const md = htmlToMarkdown(html, meta);
     expect(md).toContain("| 1 |  |  |");
+  });
+
+  it("stamps a retrieved date in the provenance header", () => {
+    const md = htmlToMarkdown("<p>x</p>", { title: "T", url: "https://u", source: "atlas", version: "262.0", retrieved: "2026-07-02" });
+    expect(md).toContain("> Retrieved: 2026-07-02 via sf-docs (atlas)");
+  });
+
+  it("defaults the retrieved date to today (ISO)", () => {
+    const md = htmlToMarkdown("<p>x</p>", { title: "T", url: "https://u", source: "help" });
+    expect(md).toMatch(/> Retrieved: \d{4}-\d{2}-\d{2} via sf-docs \(help\)/);
+  });
+
+  it("todayISO returns a YYYY-MM-DD string", () => {
+    expect(todayISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

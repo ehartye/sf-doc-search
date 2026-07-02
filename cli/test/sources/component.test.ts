@@ -31,4 +31,10 @@ describe("component source", () => {
     expect(res.markdown).toContain("icon-name");
     expect(res.source).toBe("component");
   });
+
+  it("stamps a dated provenance line", async () => {
+    const browser = { fetchJsonInPage: async () => ({ response: { attributes: [] } }) } as any;
+    const doc = await fetchComponent(browser, { namespace: "lightning", name: "button", model: "lwc" });
+    expect(doc.markdown).toMatch(/> Retrieved: \d{4}-\d{2}-\d{2} via sf-docs \(component\)/);
+  });
 });

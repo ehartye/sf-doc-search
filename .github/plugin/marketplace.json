@@ -3,14 +3,14 @@
   "owner": { "name": "ehartye" },
   "metadata": {
     "description": "Clean Salesforce documentation retrieval for GitHub Copilot.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "sf-doc-search",
       "source": "../",
       "description": "Clean Salesforce documentation retrieval (dev docs, Help, Trailhead, release notes) via the sf-docs CLI + skill.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "author": { "name": "ehartye" }
     }
   ]

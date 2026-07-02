@@ -6,6 +6,7 @@ import { fetchAtlasDoc, listCatalog, fetchToc, type CatalogEntry, type TocEntry 
 import { fetchComponent } from "./sources/component";
 import { fetchHelp } from "./sources/help";
 import { fetchTrailhead } from "./sources/trailhead";
+import { fetchLwr, listLwrCatalog, fetchLwrToc } from "./sources/lwr";
 import { coveoSearch, type CoveoResult, type CoveoSource } from "./coveo";
 
 export class Engine {
@@ -37,7 +38,9 @@ export class Engine {
       case "trailhead":
         result = await fetchTrailhead(this.browser, r.url);
         break;
-      case "atlas-lwr":
+      case "lwr":
+        result = await fetchLwr(this.browser, r.url);
+        break;
       case "generic":
         result = await fetchTrailhead(this.browser, r.url); // render+extract is the same shape
         result = { ...result, source: r.source };
@@ -50,23 +53,38 @@ export class Engine {
   }
 
   async catalog(grep?: string): Promise<CatalogEntry[]> {
-    const key = "catalog";
+    const key = "catalog:v2";
     let all = this.cache.get<CatalogEntry[]>(key);
     if (!all) {
-      all = await listCatalog(this.browser);
-      this.cache.set(key, all);
+      const atlas = await listCatalog(this.browser);
+      let lwr: CatalogEntry[] = [];
+      try {
+        lwr = (await listLwrCatalog(this.browser)).map((e) => ({
+          deliverable: e.id,
+          title: e.title,
+          longId: e.url,
+          platform: "lwr" as const,
+        }));
+      } catch (err) {
+        // Degrade loudly, not silently: the Atlas half is still valid.
+        console.error(`sf-docs warning: LWR catalog unavailable (${(err as Error).message}) — listing Atlas books only`);
+      }
+      all = [...atlas, ...lwr];
+      // Don't cache a degraded catalog — a healthy run should repopulate it.
+      if (lwr.length > 0) this.cache.set(key, all);
     }
     if (!grep) return all;
     const q = grep.toLowerCase();
     return all.filter((c) => c.deliverable.toLowerCase().includes(q) || c.title.toLowerCase().includes(q));
   }
 
-  async toc(deliverable: string): Promise<TocEntry[]> {
-    return fetchToc(this.browser, deliverable);
+  async toc(target: string): Promise<TocEntry[]> {
+    if (target.includes("/")) return fetchLwrToc(this.browser, target);
+    return fetchToc(this.browser, target);
   }
 
-  async search(query: string, source: CoveoSource): Promise<CoveoResult[]> {
-    return coveoSearch(this.browser, query, source);
+  async search(query: string, source: CoveoSource, allResults = false): Promise<CoveoResult[]> {
+    return coveoSearch(this.browser, query, source, 10, allResults);
   }
 
   async close(): Promise<void> {

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { BrowserManager } from "./browser";
 import { Engine } from "./engine";
 import { formatDoc, type Format } from "./format";
+import { fetchBatch } from "./batch";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { runDoctor } from "./doctor";
@@ -51,13 +52,15 @@ program
   });
 
 program
-  .command("fetch <url>")
-  .description("Fetch a Salesforce doc page (any of the supported sources) as clean Markdown")
-  .action(async (url: string) => {
+  .command("fetch <urls...>")
+  .description("Fetch one or more Salesforce doc pages as clean Markdown (multiple URLs share one browser)")
+  .action(async (urls: string[]) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const doc = await engine.fetch(url);
-      console.log(formatDoc(doc, opts.format));
+      const { output, failures } = await fetchBatch(engine, urls, opts.format);
+      console.log(output);
+      for (const f of failures) console.error(`sf-docs error: ${f}`);
+      if (failures.length > 0) process.exitCode = 1;
     }, opts);
   });
 
@@ -70,17 +73,17 @@ program
     await run(async (engine) => {
       const entries = await engine.catalog(cmdOpts.grep);
       if (opts.format === "json") console.log(JSON.stringify(entries, null, 2));
-      else for (const e of entries) console.log(`${e.deliverable}\t${e.title}`);
+      else for (const e of entries) console.log(`${e.deliverable}\t${e.platform}\t${e.title}`);
     }, opts);
   });
 
 program
-  .command("toc <deliverable>")
-  .description("Show the table of contents for one deliverable (e.g. apexcode)")
-  .action(async (deliverable: string) => {
+  .command("toc <target>")
+  .description("Table of contents: an Atlas deliverable (apexcode) or an LWR guide (ai/agentforce/guide)")
+  .action(async (target: string) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const entries = await engine.toc(deliverable);
+      const entries = await engine.toc(target);
       if (opts.format === "json") console.log(JSON.stringify(entries, null, 2));
       else for (const e of entries) console.log(`${e.href ?? "-"}\t${e.text}`);
     }, opts);
@@ -102,12 +105,13 @@ program
 
 program
   .command("search <query>")
-  .description("Search Salesforce Help or release notes (Coveo)")
+  .description("Search Salesforce Help or release notes (Coveo; official domains + English by default)")
   .requiredOption("--source <source>", "help | release")
-  .action(async (query: string, cmdOpts: { source: "help" | "release" }) => {
+  .option("--all-results", "include non-official domains and localized variants", false)
+  .action(async (query: string, cmdOpts: { source: "help" | "release"; allResults?: boolean }) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const results = await engine.search(query, cmdOpts.source);
+      const results = await engine.search(query, cmdOpts.source, cmdOpts.allResults);
       if (opts.format === "json") console.log(JSON.stringify(results, null, 2));
       else for (const r of results) console.log(`${r.url}\n  ${r.title}\n  ${r.excerpt}\n`);
     }, opts);

@@ -45,7 +45,7 @@ export async function fetchAtlasDoc(browser: BrowserManager, ref: AtlasRef): Pro
   };
 }
 
-export interface CatalogEntry { deliverable: string; title: string; longId: string; }
+export interface CatalogEntry { deliverable: string; title: string; longId: string; platform: "atlas" | "lwr"; }
 
 export async function listCatalog(browser: BrowserManager): Promise<CatalogEntry[]> {
   const idx = await browser.fetchJsonInPage(getIndexUrl());
@@ -55,6 +55,7 @@ export async function listCatalog(browser: BrowserManager): Promise<CatalogEntry
     deliverable: c.value?.deliverable ?? c.id,
     title: c.value?.title ?? "",
     longId: c.id,
+    platform: "atlas" as const,
   }));
 }
 

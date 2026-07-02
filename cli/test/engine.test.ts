@@ -43,3 +43,61 @@ describe("Engine.fetch", () => {
     expect(res.markdown).toContain("Click me");
   });
 });
+
+describe("lwr integration", () => {
+  it("fetch dispatches lwr URLs to the lwr fetcher (provenance says lwr)", async () => {
+    const browser = {
+      renderAndExtract: async () => ({ html: "<p>Some LWR doc body text.</p>", title: "T | G | Salesforce Developers" }),
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    const doc = await engine.fetch("https://developer.salesforce.com/docs/ai/agentforce/guide/agent-api.html");
+    expect(doc.source).toBe("lwr");
+    expect(doc.title).toBe("T");
+    expect(doc.markdown).toContain("(lwr)");
+  });
+
+  it("catalog merges atlas and lwr entries with platform tags", async () => {
+    const browser = {
+      fetchJsonInPage: async () => ({
+        content: [{ id: "atlas.en-us.262.0.apexcode.meta", key: "en-us", value: { deliverable: "apexcode", title: "Apex Developer Guide" } }],
+      }),
+      fetchTextInPage: async () => '<a href="/docs/ai/agentforce/overview">Agentforce</a>',
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    const all = await engine.catalog();
+    expect(all).toContainEqual({ deliverable: "apexcode", title: "Apex Developer Guide", longId: "atlas.en-us.262.0.apexcode.meta", platform: "atlas" });
+    expect(all).toContainEqual({ deliverable: "ai/agentforce", title: "Agentforce", longId: "https://developer.salesforce.com/docs/ai/agentforce", platform: "lwr" });
+    expect(await engine.catalog("agentforce")).toHaveLength(1);
+  });
+
+  it("catalog degrades to atlas-only (with a stderr warning) when the LWR side fails", async () => {
+    const browser = {
+      fetchJsonInPage: async () => ({
+        content: [{ id: "atlas.en-us.262.0.apexcode.meta", key: "en-us", value: { deliverable: "apexcode", title: "Apex Developer Guide" } }],
+      }),
+      fetchTextInPage: async () => { throw new Error("HTTP 500 for https://developer.salesforce.com/docs/apis"); },
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const all = await engine.catalog();
+      expect(all).toHaveLength(1);
+      expect(all[0].platform).toBe("atlas");
+      expect(warnings.some((w) => w.includes("LWR"))).toBe(true);
+    } finally {
+      console.error = orig;
+    }
+  });
+
+  it("toc dispatches slash-targets to lwr and bare words to atlas", async () => {
+    const browser = {
+      fetchTextInPage: async () => '<a href="/docs/ai/agentforce/guide/x.html">X</a>',
+      fetchJsonInPage: async () => ({ title: "Apex", toc: [{ id: "n1", text: "Intro", a_attr: { href: "intro.htm" } }] }),
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    expect((await engine.toc("ai/agentforce/guide"))[0].text).toBe("X");
+    expect((await engine.toc("apexcode"))[0].text).toBe("Intro");
+  });
+});

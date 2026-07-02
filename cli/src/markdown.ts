@@ -38,16 +38,23 @@ export interface DocMeta {
   url: string;
   source: Source;
   version?: string;
+  retrieved?: string; // ISO date; defaults to today (UTC)
+}
+
+/** Today's date (UTC) in ISO YYYY-MM-DD, the format provenance headers carry. */
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function htmlToMarkdown(html: string, meta: DocMeta): string {
   const body = td.turndown(html).trim();
+  const retrieved = meta.retrieved ?? todayISO();
   const header = [
     `# ${meta.title}`,
     "",
     `> Source: ${meta.url}`,
     meta.version ? `> Version: ${meta.version}` : undefined,
-    `> Retrieved via sf-docs (${meta.source})`,
+    `> Retrieved: ${retrieved} via sf-docs (${meta.source})`,
     "",
   ]
     .filter((l) => l !== undefined)
