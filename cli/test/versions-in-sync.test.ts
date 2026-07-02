@@ -33,7 +33,7 @@ describe("manifest versions stay in sync", () => {
 });
 
 describe("shared skills stay mirrored", () => {
-  it.each(["sf-docs", "sf-docs-preflight"])(
+  it.each(["sf-docs", "sf-docs-preflight", "sf-docs-reference"])(
     "the .github/skills/%s mirror is identical to the .claude/skills source",
     (skill) => {
       const source = readText(`../../.claude/skills/${skill}/SKILL.md`);
