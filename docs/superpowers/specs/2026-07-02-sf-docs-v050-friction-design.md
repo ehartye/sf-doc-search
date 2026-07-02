@@ -43,14 +43,17 @@ list although `fetch --format json` already returns structured
 - New private `context()` — lazily creates a single `BrowserContext` from
   `launch()`; `page()` opens pages in it. Methods close **their page** after use,
   never the context. `close()` closes the browser (context dies with it).
-- Reinstate per-origin warmup memoization (`warmedOrigins: Set<string>`), now
-  **correct** because the context (and its Akamai cookies) persists across calls:
-  warm on first use of an origin, skip afterwards. The 0.4.0 per-call warmup
-  comment is replaced by one explaining the shared-context invariant.
-- All fetchers benefit: `fetchJsonInPage`, `fetchTextInPage` (warm once per
-  origin per process), and navigation-based methods (`renderAndExtract`,
-  `renderFull`, `postJsonInPage`, `captureCoveoToken`) share cookies, which also
-  eliminates repeated bot-wall negotiation on help.salesforce.com.
+- A **persistent docs page** (not an origin memo): evaluate-fetches must run from
+  a page that IS on developer.salesforce.com — a fresh page in a warmed context
+  sits on `about:blank`, making its `fetch()` cross-origin. So one page is
+  navigated to the warmup URL once and reused for every
+  `fetchJsonInPage`/`fetchTextInPage` evaluate. It is assigned only after a
+  successful navigation (a failed warmup must not poison the slot). Lazy init is
+  documented as sequential-only (one CLI command per process).
+- Navigation-based methods (`renderAndExtract`, `renderFull`, `postJsonInPage`,
+  `captureCoveoToken`) share the context's cookies, reducing repeated bot-wall
+  negotiation on help.salesforce.com; `postJsonInPage` still navigates its help
+  origin per call (searches are rare — accepted).
 - Failure semantics unchanged: per-call errors still throw; a crashed context is
   not resurrected mid-process (acceptable: the CLI is short-lived per invocation).
 
