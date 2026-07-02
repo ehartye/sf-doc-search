@@ -85,7 +85,12 @@ export async function listLwrCatalog(browser: BrowserManager): Promise<LwrCatalo
   return entries;
 }
 
-/** target: "<area>/<guide>" shorthand or a full /docs/... URL. */
+/**
+ * target: "<area>/<guide>" shorthand or a full /docs/... URL.
+ * Scope follows the given depth: a section target (ai/agentforce/guide) returns that
+ * section's nav; a bare guide root (ai/agentforce, the shape catalog entries carry)
+ * returns the whole doc set's TOC across all sections.
+ */
 export async function fetchLwrToc(browser: BrowserManager, target: string): Promise<TocEntry[]> {
   let guidePath: string;
   let url: string;

@@ -93,6 +93,15 @@ describe("fetchLwr", () => {
     expect(doc.version).toBe("current (unversioned platform)");
     expect(doc.markdown).toContain("> Retrieved via sf-docs (lwr)");
   });
+  it("falls back to renderFull when the selector extraction fails", async () => {
+    const browser = {
+      renderAndExtract: async () => { throw new Error("selector timeout"); },
+      renderFull: async () => ({ html: "<p>Fallback body.</p>", title: "T | Salesforce Developers" }),
+    } as any;
+    const doc = await fetchLwr(browser, "https://developer.salesforce.com/docs/ai/agentforce/guide/x.html");
+    expect(doc.title).toBe("T");
+    expect(doc.html).toContain("Fallback body");
+  });
 });
 
 describe("listLwrCatalog", () => {
@@ -136,5 +145,13 @@ describe("fetchLwrToc", () => {
   it("throws when the nav parses to zero entries", async () => {
     const browser = { fetchTextInPage: async () => "<html></html>" } as any;
     await expect(fetchLwrToc(browser, "ai/agentforce/guide")).rejects.toThrow(/--debug/);
+  });
+  it("a bare guide-root URL yields the whole doc-set TOC (all sections)", async () => {
+    const browser = {
+      fetchTextInPage: async () =>
+        '<a href="/docs/ai/agentforce/guide/x.html">X</a><a href="/docs/ai/agentforce/references/r.html">R</a>',
+    } as any;
+    const toc = await fetchLwrToc(browser, "https://developer.salesforce.com/docs/ai/agentforce");
+    expect(toc).toHaveLength(2); // scope is the guide root, so every section is included
   });
 });
