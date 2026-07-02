@@ -54,6 +54,13 @@ describe("parseLwrToc", () => {
     expect(toc[1].text).toBe("Get Started");
     expect(toc.some((t) => t.href?.includes("/references/") || t.href?.includes("einstein"))).toBe(false);
   });
+  it("tolerates regex metacharacters in guidePath (no crash, no false match)", () => {
+    expect(() => parseLwrToc(TOC_FIXTURE, "ai/agentforce(evil")).not.toThrow();
+    expect(parseLwrToc(TOC_FIXTURE, "ai/agentforce(evil")).toEqual([]);
+    expect(parseLwrToc(TOC_FIXTURE, "ai/[agentforce")).toEqual([]);
+    // sanity: the legitimate path still works after the fix
+    expect(parseLwrToc(TOC_FIXTURE, "ai/agentforce/guide")).toHaveLength(2);
+  });
 });
 
 describe("cleanLwrTitle", () => {

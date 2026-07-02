@@ -13,6 +13,10 @@ function anchorText(inner: string): string {
   return inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** Extract unique <area>/<guide> roots from the /docs/apis directory page's raw SSR HTML. */
 export function parseLwrCatalog(html: string): LwrCatalogEntry[] {
   const seen = new Map<string, LwrCatalogEntry>();
@@ -28,7 +32,7 @@ export function parseLwrCatalog(html: string): LwrCatalogEntry[] {
 
 /** Extract the guide nav (deduped by href) from any guide page's raw SSR HTML. */
 export function parseLwrToc(html: string, guidePath: string): TocEntry[] {
-  const re = new RegExp(`<a[^>]*href="(/docs/${guidePath}/[^"#?]*)"[^>]*>([\\s\\S]*?)</a>`, "gi");
+  const re = new RegExp(`<a[^>]*href="(/docs/${escapeRegExp(guidePath)}/[^"#?]*)"[^>]*>([\\s\\S]*?)</a>`, "gi");
   const seen = new Map<string, TocEntry>();
   for (const m of html.matchAll(re)) {
     const path = m[1];
