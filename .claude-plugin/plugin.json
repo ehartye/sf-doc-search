@@ -1,6 +1,6 @@
 {
   "name": "sf-doc-search",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Retrieve clean Salesforce documentation (dev docs, Help, Trailhead, release notes) without shadow-DOM/render friction.",
   "author": { "name": "ehartye" },
   "homepage": "https://github.com/ehartye/sf-doc-search",
