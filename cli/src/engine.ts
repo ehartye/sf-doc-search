@@ -53,7 +53,9 @@ export class Engine {
   }
 
   async catalog(grep?: string): Promise<CatalogEntry[]> {
-    const key = "catalog:v2";
+    // Key versioned with catalog SHAPE/CONTENT changes so an upgraded CLI never
+    // serves a stale pre-upgrade catalog from disk (v2: platform field; v3: seed roots).
+    const key = "catalog:v3";
     let all = this.cache.get<CatalogEntry[]>(key);
     if (!all) {
       const atlas = await listCatalog(this.browser);
