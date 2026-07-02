@@ -127,3 +127,46 @@ export async function fetchLwrToc(browser: BrowserManager, target: string): Prom
   }
   return toc;
 }
+
+/**
+ * Breadth-first expansion of the hierarchical LWR nav: fetch the target's toc,
+ * then fetch each new entry's page and merge its scoped toc, `depth` levels deep.
+ * Deduped by href; pages already seen are not re-fetched; a child page whose nav
+ * yields nothing (leaf) is skipped. Hard cap guards against runaway guides.
+ */
+export async function fetchLwrTocDeep(
+  browser: BrowserManager,
+  target: string,
+  depth = 1,
+  cap = 150,
+): Promise<TocEntry[]> {
+  const first = await fetchLwrToc(browser, target);
+  const seen = new Map<string, TocEntry>(first.filter((e) => e.href).map((e) => [e.href!, e]));
+  let frontier = [...seen.values()];
+  let truncated = false;
+
+  for (let level = 2; level <= depth; level++) {
+    const next: TocEntry[] = [];
+    for (const entry of frontier) {
+      if (seen.size >= cap) { truncated = true; break; }
+      let children: TocEntry[];
+      try {
+        children = await fetchLwrToc(browser, entry.href!);
+      } catch {
+        continue; // leaf page or transient parse failure — expansion is best-effort
+      }
+      for (const c of children) {
+        if (!c.href || seen.has(c.href)) continue;
+        if (seen.size >= cap) { truncated = true; break; }
+        seen.set(c.href, c);
+        next.push(c);
+      }
+    }
+    if (truncated || next.length === 0) break;
+    frontier = next;
+  }
+  if (truncated) {
+    console.error(`sf-docs warning: toc truncated at ${cap} entries — narrow the target or reduce --depth`);
+  }
+  return [...seen.values()];
+}

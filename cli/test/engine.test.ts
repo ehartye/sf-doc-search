@@ -100,4 +100,16 @@ describe("lwr integration", () => {
     expect((await engine.toc("ai/agentforce/guide"))[0].text).toBe("X");
     expect((await engine.toc("apexcode"))[0].text).toBe("Intro");
   });
+
+  it("toc passes depth through to the LWR expansion", async () => {
+    const browser = {
+      fetchTextInPage: async (u: string) =>
+        u.endsWith("/guide")
+          ? '<a href="/docs/ai/agentforce/guide/s1.html">S1</a>'
+          : '<a href="/docs/ai/agentforce/guide/s1-child.html">C</a>',
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    expect(await engine.toc("ai/agentforce/guide", 1)).toHaveLength(1);
+    expect(await engine.toc("ai/agentforce/guide", 2)).toHaveLength(2);
+  });
 });

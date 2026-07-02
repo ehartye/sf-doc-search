@@ -6,7 +6,7 @@ import { fetchAtlasDoc, listCatalog, fetchToc, type CatalogEntry, type TocEntry 
 import { fetchComponent } from "./sources/component";
 import { fetchHelp } from "./sources/help";
 import { fetchTrailhead } from "./sources/trailhead";
-import { fetchLwr, listLwrCatalog, fetchLwrToc } from "./sources/lwr";
+import { fetchLwr, listLwrCatalog, fetchLwrToc, fetchLwrTocDeep } from "./sources/lwr";
 import { coveoSearch, type CoveoResult, type CoveoSource } from "./coveo";
 
 export class Engine {
@@ -78,8 +78,11 @@ export class Engine {
     return all.filter((c) => c.deliverable.toLowerCase().includes(q) || c.title.toLowerCase().includes(q));
   }
 
-  async toc(target: string): Promise<TocEntry[]> {
-    if (target.includes("/")) return fetchLwrToc(this.browser, target);
+  async toc(target: string, depth = 1): Promise<TocEntry[]> {
+    if (target.includes("/")) {
+      return depth > 1 ? fetchLwrTocDeep(this.browser, target, depth) : fetchLwrToc(this.browser, target);
+    }
+    if (depth > 1) console.error("sf-docs warning: --depth is ignored for Atlas deliverables (their toc is already the full tree)");
     return fetchToc(this.browser, target);
   }
 

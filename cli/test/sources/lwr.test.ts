@@ -94,7 +94,7 @@ describe("cleanLwrTitle", () => {
   });
 });
 
-import { fetchLwr, listLwrCatalog, fetchLwrToc } from "../../src/sources/lwr";
+import { fetchLwr, listLwrCatalog, fetchLwrToc, fetchLwrTocDeep } from "../../src/sources/lwr";
 
 const CATALOG_URL = "https://developer.salesforce.com/docs/apis";
 
@@ -172,5 +172,47 @@ describe("fetchLwrToc", () => {
     } as any;
     const toc = await fetchLwrToc(browser, "https://developer.salesforce.com/docs/ai/agentforce");
     expect(toc).toHaveLength(2); // both sections' links pass the root scope (nav itself is hierarchical)
+  });
+});
+
+describe("fetchLwrTocDeep", () => {
+  // Level 1 at the guide root lists two sections; each section page lists children.
+  const NAVS: Record<string, string> = {
+    "https://developer.salesforce.com/docs/ai/agentforce/guide":
+      '<a href="/docs/ai/agentforce/guide/s1.html">S1</a><a href="/docs/ai/agentforce/guide/s2.html">S2</a>',
+    "https://developer.salesforce.com/docs/ai/agentforce/guide/s1.html":
+      '<a href="/docs/ai/agentforce/guide/s1.html">S1</a><a href="/docs/ai/agentforce/guide/s1-child.html">S1 Child</a>',
+    "https://developer.salesforce.com/docs/ai/agentforce/guide/s2.html":
+      '<a href="/docs/ai/agentforce/guide/s2-child.html">S2 Child</a>',
+  };
+  const browser = { fetchTextInPage: async (u: string) => NAVS[u] ?? "<html></html>" } as any;
+
+  it("depth 1 equals plain fetchLwrToc", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 1);
+    expect(toc.map((t) => t.text)).toEqual(["S1", "S2"]);
+  });
+
+  it("depth 2 merges children, deduped, without re-fetching seen pages", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 2);
+    expect(toc.map((t) => t.text).sort()).toEqual(["S1", "S1 Child", "S2", "S2 Child"]);
+  });
+
+  it("expansion tolerates child pages with no nav (leaf pages throw inside fetchLwrToc)", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 3);
+    // s1-child/s2-child have no nav entries -> their fetch throws -> skipped, no crash
+    expect(toc).toHaveLength(4);
+  });
+
+  it("caps the merged toc and warns", async () => {
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 2, 3);
+      expect(toc.length).toBeLessThanOrEqual(3);
+      expect(warnings.some((w) => w.includes("truncated"))).toBe(true);
+    } finally {
+      console.error = orig;
+    }
   });
 });
