@@ -59,8 +59,12 @@ copilot plugin install sf-doc-search@sf-doc-search-marketplace
 > (`gh skill install`), which is fully supported, and adjust the manifest paths to
 > match your installed `copilot` CLI version.
 
-> **Maintainers:** `.github/skills/sf-docs/SKILL.md` is a mirror of
-> `.claude/skills/sf-docs/SKILL.md` — keep the two in sync when editing the skill.
+> **Maintainers:** the `.github/skills/*` files mirror `.claude/skills/*`, and the
+> CLI/plugin/marketplace versions must all match. Both are enforced by
+> `cli/test/versions-in-sync.test.ts` (part of `npm test`), so drift fails the suite.
+> When bumping the version, update `cli/package.json`, `.claude-plugin/plugin.json`,
+> `.claude-plugin/marketplace.json`, `.github/plugin.json`, and
+> `.github/plugin/marketplace.json` together.
 
 ## Verify the install
 
