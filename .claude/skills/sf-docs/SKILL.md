@@ -9,6 +9,13 @@ You have a CLI named `sf-docs` that fetches clean Markdown from Salesforce's
 documentation sources. It clears the developer-docs bot-wall and renders the
 shadow-DOM Help pages for you, so prefer it over fetching Salesforce URLs directly.
 
+## First-run check
+
+Before your first `sf-docs` command in a session — and whenever one fails with
+"command not found", a browser/launch error, or a version mismatch — run the
+**sf-docs-preflight** skill (it runs `sf-docs doctor` and gives exact remediation).
+Only proceed once it reports ready.
+
 ## Invoking the CLI
 
 Run `sf-docs <command>`. If `sf-docs` is not found on PATH, run `npx sf-docs <command>`

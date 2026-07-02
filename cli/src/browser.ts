@@ -38,6 +38,18 @@ export class BrowserManager {
     return ctx.newPage();
   }
 
+  /** Attempt to launch the browser (system Chrome or bundled Chromium) and report success. */
+  async probe(): Promise<{ ok: boolean; detail: string }> {
+    try {
+      const browser = await this.launch();
+      const detail = `Chromium ${browser.version()}`;
+      await this.close();
+      return { ok: true, detail };
+    } catch (err) {
+      return { ok: false, detail: (err as Error).message };
+    }
+  }
+
   /** Warm a host once so Akamai cookies are present, then fetch JSON from page context. */
   async fetchJsonInPage(url: string): Promise<any> {
     const page = await this.page();

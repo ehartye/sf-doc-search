@@ -2,6 +2,8 @@ import { Command } from "commander";
 import { BrowserManager } from "./browser";
 import { Engine } from "./engine";
 import { formatDoc, type Format } from "./format";
+import { runDoctor } from "./doctor";
+import pkg from "../package.json";
 
 interface GlobalOpts { format: Format; debug?: boolean; cache: boolean; }
 
@@ -26,9 +28,25 @@ const program = new Command();
 program
   .name("sf-docs")
   .description("Retrieve clean Salesforce documentation without shadow-DOM/render friction.")
+  .version(pkg.version, "-v, --version", "print the sf-docs CLI version")
   .option("-f, --format <fmt>", "output format: md | html | json", "md")
   .option("--debug", "run the browser headed with verbose logs", false)
   .option("--no-cache", "bypass the on-disk cache");
+
+program
+  .command("doctor")
+  .description("Preflight: check the install — CLI version, Node, browser, and CLI/plugin version match")
+  .action(async () => {
+    const browser = new BrowserManager({ debug: program.opts<GlobalOpts>().debug });
+    try {
+      const report = await runDoctor(pkg.version, browser);
+      for (const c of report.checks) console.log(`${c.ok ? "OK  " : "!!  "}${c.name}: ${c.detail}`);
+      console.log(report.ok ? "\nsf-docs is ready." : "\nsf-docs is NOT ready — resolve the !! items above.");
+      if (!report.ok) process.exitCode = 1;
+    } finally {
+      await browser.close();
+    }
+  });
 
 program
   .command("fetch <url>")

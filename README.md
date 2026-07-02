@@ -62,6 +62,19 @@ copilot plugin install sf-doc-search@sf-doc-search-marketplace
 > **Maintainers:** `.github/skills/sf-docs/SKILL.md` is a mirror of
 > `.claude/skills/sf-docs/SKILL.md` — keep the two in sync when editing the skill.
 
+## Verify the install
+
+After installing, confirm the CLI is runnable and matches the plugin:
+
+```
+sf-docs doctor
+```
+
+It checks Node (>= 20), browser availability (system Chrome or bundled Chromium),
+and that the running CLI version matches the installed plugin version — printing
+exact remediation for anything that's off. Agents can invoke the **sf-docs-preflight**
+skill, which wraps this and is referenced as the first step by the `sf-docs` skill.
+
 ## CLI usage
 
 ```
