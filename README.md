@@ -7,9 +7,12 @@ agent gets real Markdown instead of empty bodies or shadow-DOM soup.
 
 ## What it retrieves
 
-- **Developer docs** (Apex, SOQL, LWC/Aura, Metadata/REST/Tooling APIs) via the
-  Atlas JSON API.
-- **Salesforce Help** (admin/setup) via headless render.
+- **Developer docs — classic Atlas** (Apex, SOQL, LWC/Aura, Metadata/REST/Tooling
+  APIs) via the Atlas JSON API.
+- **Developer docs — LWR platform** (Agentforce, Pub/Sub API, Models API, and the
+  other `developer.salesforce.com/docs/<area>/<guide>` doc sets) via server-rendered
+  HTML — catalog, hierarchical toc, and fetch.
+- **Salesforce Help** (admin/setup) via headless render, boilerplate stripped.
 - **Release notes** via headless render + Coveo search.
 - **Trailhead** modules/units via render.
 
@@ -82,9 +85,10 @@ skill, which wraps this and is referenced as the first step by the `sf-docs` ski
 ## CLI usage
 
 ```
-sf-docs fetch "<url>"                       # any supported source -> Markdown
-sf-docs catalog --grep apex                 # find a dev-docs book
-sf-docs toc apexcode                        # table of contents for a book
+sf-docs fetch "<url>" ["<url>" ...]         # any supported source -> Markdown; multiple URLs share one browser
+sf-docs catalog --grep apex                 # find a doc set (columns: id, platform atlas|lwr, title)
+sf-docs toc apexcode                        # Atlas book table of contents
+sf-docs toc ai/agentforce/guide             # LWR guide nav (hierarchical: rerun on an entry URL to drill down)
 sf-docs component lightning button          # LWC component reference
 sf-docs search "sharing rules" --source help
 ```
@@ -92,6 +96,10 @@ sf-docs search "sharing rules" --source help
 Flags: `--format md|html|json`, `--debug` (headed browser), `--no-cache`.
 
 - `search --all-results` — include non-official domains and localized variants (default output is official Salesforce domains, English only)
+- The LWR catalog rows come from the `/docs/apis` directory (API doc sets); LWR doc
+  sets not listed there (e.g. `ai/agentforce`) are still fully fetchable by URL.
+- Every fetch's provenance header carries the source URL, doc version (or release),
+  and retrieved date.
 
 ## Development
 
@@ -107,7 +115,9 @@ npm run build
 
 All source paths work end-to-end against live Salesforce:
 
-- **Developer docs** — `fetch`, `catalog`, `toc` (Atlas JSON API; Akamai cleared).
+- **Developer docs (Atlas)** — `fetch`, `catalog`, `toc` (Atlas JSON API; Akamai cleared).
+- **Developer docs (LWR)** — `fetch` (clean titles + lwr provenance), `catalog`
+  (merged with Atlas, platform-tagged), `toc` (hierarchical drill-down).
 - **Component library** — `component <ns> <name>` (cx-router JSON).
 - **Salesforce Help** — `fetch` of articles (shadow-DOM body extracted) and
   `search --source help` (Coveo discovery).
