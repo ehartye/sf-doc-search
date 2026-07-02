@@ -57,14 +57,21 @@ export class Engine {
     let all = this.cache.get<CatalogEntry[]>(key);
     if (!all) {
       const atlas = await listCatalog(this.browser);
-      const lwr = (await listLwrCatalog(this.browser)).map((e) => ({
-        deliverable: e.id,
-        title: e.title,
-        longId: e.url,
-        platform: "lwr" as const,
-      }));
+      let lwr: CatalogEntry[] = [];
+      try {
+        lwr = (await listLwrCatalog(this.browser)).map((e) => ({
+          deliverable: e.id,
+          title: e.title,
+          longId: e.url,
+          platform: "lwr" as const,
+        }));
+      } catch (err) {
+        // Degrade loudly, not silently: the Atlas half is still valid.
+        console.error(`sf-docs warning: LWR catalog unavailable (${(err as Error).message}) — listing Atlas books only`);
+      }
       all = [...atlas, ...lwr];
-      this.cache.set(key, all);
+      // Don't cache a degraded catalog — a healthy run should repopulate it.
+      if (lwr.length > 0) this.cache.set(key, all);
     }
     if (!grep) return all;
     const q = grep.toLowerCase();

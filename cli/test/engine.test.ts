@@ -70,6 +70,27 @@ describe("lwr integration", () => {
     expect(await engine.catalog("agentforce")).toHaveLength(1);
   });
 
+  it("catalog degrades to atlas-only (with a stderr warning) when the LWR side fails", async () => {
+    const browser = {
+      fetchJsonInPage: async () => ({
+        content: [{ id: "atlas.en-us.262.0.apexcode.meta", key: "en-us", value: { deliverable: "apexcode", title: "Apex Developer Guide" } }],
+      }),
+      fetchTextInPage: async () => { throw new Error("HTTP 500 for https://developer.salesforce.com/docs/apis"); },
+    } as any;
+    const engine = new Engine(browser, { enabled: false });
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const all = await engine.catalog();
+      expect(all).toHaveLength(1);
+      expect(all[0].platform).toBe("atlas");
+      expect(warnings.some((w) => w.includes("LWR"))).toBe(true);
+    } finally {
+      console.error = orig;
+    }
+  });
+
   it("toc dispatches slash-targets to lwr and bare words to atlas", async () => {
     const browser = {
       fetchTextInPage: async () => '<a href="/docs/ai/agentforce/guide/x.html">X</a>',
