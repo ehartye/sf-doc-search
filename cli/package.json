@@ -1,11 +1,17 @@
 {
   "name": "sf-docs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Retrieve clean Salesforce documentation (dev docs, Help, Trailhead, release notes) without shadow-DOM/render friction.",
   "type": "module",
-  "bin": { "sf-docs": "dist/index.js" },
-  "files": ["dist"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "sf-docs": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
