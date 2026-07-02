@@ -48,12 +48,21 @@ export class BrowserManager {
   /** Persistent page navigated once to the docs origin. Evaluate-fetches run from it:
    *  same-origin to developer.salesforce.com, cookies live in the shared context, and
    *  no repeat warmup navigation. (A fresh page would sit on about:blank and its
-   *  fetch() would be cross-origin — that's why this page persists.) */
+   *  fetch() would be cross-origin — that's why this page persists.)
+   *  Assigned only AFTER a successful warmup so a failed goto never poisons the slot;
+   *  callers are sequential (one CLI command per process) — lazy init is not
+   *  concurrency-safe and doesn't need to be. */
   private async docs(): Promise<Page> {
     if (this.docsPage && !this.docsPage.isClosed()) return this.docsPage;
-    this.docsPage = await this.page();
-    await this.docsPage.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
-    return this.docsPage;
+    const page = await this.page();
+    try {
+      await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
+    } catch (err) {
+      await page.close().catch(() => {});
+      throw err;
+    }
+    this.docsPage = page;
+    return page;
   }
 
   /** Attempt to launch the browser (system Chrome or bundled Chromium) and report success. */
@@ -68,7 +77,7 @@ export class BrowserManager {
     }
   }
 
-  /** Fetch JSON from the persistent docs page's context (Akamai cleared once per process). */
+  /** Fetch JSON from the persistent docs page's context (Akamai warmed once per process). */
   async fetchJsonInPage(url: string): Promise<any> {
     const page = await this.docs();
     return page.evaluate(async (u) => {
