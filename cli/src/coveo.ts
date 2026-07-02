@@ -49,11 +49,12 @@ export async function coveoSearch(
   allResults = false,
 ): Promise<CoveoResult[]> {
   const token = await scrapeToken(browser);
+  const fetchCount = allResults ? numberOfResults : numberOfResults * 3; // overfetch to survive filtering
   const body = {
     q: query,
     searchHub: "HTCommunity",
     aq: objectTypeFilter(source),
-    numberOfResults,
+    numberOfResults: fetchCount,
   };
   // Use the Salesforce-proxied Coveo search endpoint (same-origin to help.salesforce.com,
   // which postJsonInPage warms first). The token's platformUri points here, not to
@@ -63,5 +64,10 @@ export async function coveoSearch(
     body,
   );
   const results = parseCoveoResults(raw);
-  return allResults ? results : filterOfficial(results);
+  if (allResults) return results;
+  const filtered = filterOfficial(results);
+  if (filtered.length === 0 && results.length > 0) {
+    console.error(`sf-docs warning: all ${results.length} results were non-official or localized — use --all-results to see them`);
+  }
+  return filtered.slice(0, numberOfResults);
 }

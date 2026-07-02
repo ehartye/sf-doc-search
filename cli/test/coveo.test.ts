@@ -46,3 +46,37 @@ describe("filterOfficial", () => {
     expect(kept).toHaveLength(2);
   });
 });
+
+describe("coveoSearch overfetch", () => {
+  it("requests extra results when filtering, and slices back to the requested count", async () => {
+    let requested = 0;
+    const raw = {
+      results: Array.from({ length: 30 }, (_, i) => ({
+        title: `t${i}`,
+        clickUri: i % 2 === 0
+          ? `https://help.salesforce.com/Help_DocContent?id=a${i}&language=en_us`
+          : `https://orgcs.my.salesforce.com/x${i}`,
+        excerpt: "e",
+      })),
+    };
+    const browser = {
+      captureCoveoToken: async () => "tok",
+      postJsonInPage: async (_u: string, body: any) => { requested = body.numberOfResults; return raw; },
+    } as any;
+    const { coveoSearch } = await import("../src/coveo");
+    const results = await coveoSearch(browser, "q", "help");
+    expect(requested).toBe(30);           // 3x overfetch in filtering mode
+    expect(results).toHaveLength(10);     // sliced back to the requested count
+    expect(results.every((r) => r.url.includes("help.salesforce.com"))).toBe(true);
+  });
+  it("does NOT overfetch in --all-results mode", async () => {
+    let requested = 0;
+    const browser = {
+      captureCoveoToken: async () => "tok",
+      postJsonInPage: async (_u: string, body: any) => { requested = body.numberOfResults; return { results: [] }; },
+    } as any;
+    const { coveoSearch } = await import("../src/coveo");
+    await coveoSearch(browser, "q", "help", 10, true);
+    expect(requested).toBe(10);
+  });
+});

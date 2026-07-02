@@ -91,6 +91,8 @@ sf-docs search "sharing rules" --source help
 
 Flags: `--format md|html|json`, `--debug` (headed browser), `--no-cache`.
 
+- `search --all-results` — include non-official domains and localized variants (default output is official Salesforce domains, English only)
+
 ## Development
 
 ```
