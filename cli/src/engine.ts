@@ -83,8 +83,8 @@ export class Engine {
     return fetchToc(this.browser, target);
   }
 
-  async search(query: string, source: CoveoSource): Promise<CoveoResult[]> {
-    return coveoSearch(this.browser, query, source);
+  async search(query: string, source: CoveoSource, allResults = false): Promise<CoveoResult[]> {
+    return coveoSearch(this.browser, query, source, 10, allResults);
   }
 
   async close(): Promise<void> {

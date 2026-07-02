@@ -102,12 +102,13 @@ program
 
 program
   .command("search <query>")
-  .description("Search Salesforce Help or release notes (Coveo)")
+  .description("Search Salesforce Help or release notes (Coveo; official domains + English by default)")
   .requiredOption("--source <source>", "help | release")
-  .action(async (query: string, cmdOpts: { source: "help" | "release" }) => {
+  .option("--all-results", "include non-official domains and localized variants", false)
+  .action(async (query: string, cmdOpts: { source: "help" | "release"; allResults?: boolean }) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const results = await engine.search(query, cmdOpts.source);
+      const results = await engine.search(query, cmdOpts.source, cmdOpts.allResults);
       if (opts.format === "json") console.log(JSON.stringify(results, null, 2));
       else for (const r of results) console.log(`${r.url}\n  ${r.title}\n  ${r.excerpt}\n`);
     }, opts);

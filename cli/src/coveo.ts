@@ -18,6 +18,22 @@ export function parseCoveoResults(raw: any): CoveoResult[] {
   }));
 }
 
+const OFFICIAL_HOSTS = new Set(["help.salesforce.com", "developer.salesforce.com", "trailhead.salesforce.com"]);
+
+/** Keep only official-domain, English results (guide-compilation default). */
+export function filterOfficial(results: CoveoResult[]): CoveoResult[] {
+  return results.filter((r) => {
+    try {
+      const u = new URL(r.url);
+      if (!OFFICIAL_HOSTS.has(u.hostname.toLowerCase())) return false;
+      const lang = u.searchParams.get("language");
+      return !lang || lang.toLowerCase() === "en_us";
+    } catch {
+      return false;
+    }
+  });
+}
+
 const SEARCH_PAGE = "https://help.salesforce.com/s/?language=en_US";
 
 /** Scrape the anonymous Coveo access token by observing the search page's network calls. */
@@ -30,6 +46,7 @@ export async function coveoSearch(
   query: string,
   source: CoveoSource,
   numberOfResults = 10,
+  allResults = false,
 ): Promise<CoveoResult[]> {
   const token = await scrapeToken(browser);
   const body = {
@@ -45,5 +62,6 @@ export async function coveoSearch(
     `https://help.salesforce.com/services/apexrest/coveo/analytics/rest/search/v2?organizationId=org62salesforce&access_token=${encodeURIComponent(token)}`,
     body,
   );
-  return parseCoveoResults(raw);
+  const results = parseCoveoResults(raw);
+  return allResults ? results : filterOfficial(results);
 }
