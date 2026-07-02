@@ -36,9 +36,11 @@ not go in the guide.
    or a Salesforce-domain-restricted web search that then feeds `sf-docs fetch`).
    Do not restate `sf-docs` command mechanics — that skill is the retrieval
    authority. Prefer the latest doc version the catalog/TOC reports.
-4. **Capture provenance.** Every `sf-docs fetch` returns a provenance header
-   (title, source URL, doc version). Record it for each page — you need it for
-   the References list.
+4. **Capture provenance.** Batch known pages with multi-URL
+   `sf-docs fetch --format json "<url>" "<url>" ...` (one browser session) and
+   build each References entry mechanically from the returned array's `title`,
+   `url`, and `version` fields plus today's date. For single Markdown fetches,
+   the provenance header carries the same fields — record it per page.
 5. **Compile** into the fixed template below. Every substantive claim cites a
    reference number `[n]`.
 6. **Write** the guide to `./sf-reference/<topic-slug>.md` (create the folder if
