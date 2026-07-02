@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { BrowserManager } from "./browser";
 import { Engine } from "./engine";
 import { formatDoc, type Format } from "./format";
+import { fetchBatch } from "./batch";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { runDoctor } from "./doctor";
@@ -51,13 +52,15 @@ program
   });
 
 program
-  .command("fetch <url>")
-  .description("Fetch a Salesforce doc page (any of the supported sources) as clean Markdown")
-  .action(async (url: string) => {
+  .command("fetch <urls...>")
+  .description("Fetch one or more Salesforce doc pages as clean Markdown (multiple URLs share one browser)")
+  .action(async (urls: string[]) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const doc = await engine.fetch(url);
-      console.log(formatDoc(doc, opts.format));
+      const { output, failures } = await fetchBatch(engine, urls, opts.format);
+      console.log(output);
+      for (const f of failures) console.error(`sf-docs error: ${f}`);
+      if (failures.length > 0) process.exitCode = 1;
     }, opts);
   });
 
