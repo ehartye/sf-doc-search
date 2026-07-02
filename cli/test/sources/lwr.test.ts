@@ -91,7 +91,7 @@ describe("fetchLwr", () => {
     expect(doc.source).toBe("lwr");
     expect(doc.title).toBe("Chat with Agents");
     expect(doc.version).toBe("current (unversioned platform)");
-    expect(doc.markdown).toContain("> Retrieved via sf-docs (lwr)");
+    expect(doc.markdown).toMatch(/> Retrieved: \d{4}-\d{2}-\d{2} via sf-docs \(lwr\)/);
   });
   it("falls back to renderFull when the selector extraction fails", async () => {
     const browser = {

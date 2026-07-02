@@ -15,7 +15,7 @@ export async function fetchComponent(browser: BrowserManager, ref: ComponentRef)
     `# ${title}`,
     "",
     `> Source: ${url}`,
-    `> Retrieved via sf-docs (component)`,
+    `> Retrieved: ${new Date().toISOString().slice(0, 10)} via sf-docs (component)`,
     "",
     r.global?.description ?? "",
     "",

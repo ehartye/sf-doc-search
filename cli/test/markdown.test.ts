@@ -41,4 +41,14 @@ describe("htmlToMarkdown", () => {
     const md = htmlToMarkdown(html, meta);
     expect(md).toContain("| 1 |  |  |");
   });
+
+  it("stamps a retrieved date in the provenance header", () => {
+    const md = htmlToMarkdown("<p>x</p>", { title: "T", url: "https://u", source: "atlas", version: "262.0", retrieved: "2026-07-02" });
+    expect(md).toContain("> Retrieved: 2026-07-02 via sf-docs (atlas)");
+  });
+
+  it("defaults the retrieved date to today (ISO)", () => {
+    const md = htmlToMarkdown("<p>x</p>", { title: "T", url: "https://u", source: "help" });
+    expect(md).toMatch(/> Retrieved: \d{4}-\d{2}-\d{2} via sf-docs \(help\)/);
+  });
 });

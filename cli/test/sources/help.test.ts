@@ -26,4 +26,15 @@ describe("help source", () => {
     expect(res.markdown).toContain("Body");
     expect(res.source).toBe("release");
   });
+
+  it("records the release from the articleView URL as the doc version", async () => {
+    const browser = { renderAndExtract: async () => ({ html: "<p>Body text.</p>", title: "T | Salesforce" }) } as any;
+    const doc = await fetchHelp(
+      browser,
+      "https://help.salesforce.com/s/articleView?id=ai.x.htm&type=5&language=en_US&release=262.0.0",
+      "help",
+    );
+    expect(doc.version).toBe("262.0.0");
+    expect(doc.markdown).toContain("> Version: 262.0.0");
+  });
 });

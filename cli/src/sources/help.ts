@@ -20,11 +20,18 @@ export async function fetchHelp(browser: BrowserManager, url: string, source: So
     title = r.title;
   }
   const cleanTitle = title.replace(/\s*\|\s*Salesforce.*$/i, "").trim() || title;
+  let version: string | undefined;
+  try {
+    version = new URL(url).searchParams.get("release") ?? undefined;
+  } catch {
+    version = undefined;
+  }
   return {
     title: cleanTitle,
     url,
     source,
+    version,
     html,
-    markdown: htmlToMarkdown(html, { title: cleanTitle, url, source }),
+    markdown: htmlToMarkdown(html, { title: cleanTitle, url, source, version }),
   };
 }
