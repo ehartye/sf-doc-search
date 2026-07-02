@@ -74,3 +74,67 @@ describe("cleanLwrTitle", () => {
     expect(cleanLwrTitle("Uses | Pipes | Freely")).toBe("Uses | Pipes | Freely");
   });
 });
+
+import { fetchLwr, listLwrCatalog, fetchLwrToc } from "../../src/sources/lwr";
+
+const CATALOG_URL = "https://developer.salesforce.com/docs/apis";
+
+describe("fetchLwr", () => {
+  it("renders, cleans the title, and stamps lwr provenance", async () => {
+    const browser = {
+      renderAndExtract: async () => ({
+        html: "<p>Agent API lets you chat with agents.</p>",
+        title: "Chat with Agents | Agentforce Developer Guide | Salesforce Developers",
+      }),
+    } as any;
+    const doc = await fetchLwr(browser, "https://developer.salesforce.com/docs/ai/agentforce/guide/agent-api.html");
+    expect(doc.source).toBe("lwr");
+    expect(doc.title).toBe("Chat with Agents");
+    expect(doc.version).toBe("current (unversioned platform)");
+    expect(doc.markdown).toContain("> Retrieved via sf-docs (lwr)");
+  });
+});
+
+describe("listLwrCatalog", () => {
+  it("fetches /docs/apis and parses entries", async () => {
+    const browser = {
+      fetchTextInPage: async (u: string) => {
+        expect(u).toBe(CATALOG_URL);
+        return '<a href="/docs/ai/agentforce/overview">Agentforce</a>';
+      },
+    } as any;
+    const entries = await listLwrCatalog(browser);
+    expect(entries).toEqual([
+      { id: "ai/agentforce", title: "Agentforce", url: "https://developer.salesforce.com/docs/ai/agentforce" },
+    ]);
+  });
+  it("throws (not empty) when the page parses to zero entries", async () => {
+    const browser = { fetchTextInPage: async () => "<html>redesigned</html>" } as any;
+    await expect(listLwrCatalog(browser)).rejects.toThrow(/docs\/apis/);
+  });
+});
+
+describe("fetchLwrToc", () => {
+  it("accepts an <area>/<guide> shorthand", async () => {
+    const browser = {
+      fetchTextInPage: async (u: string) => {
+        expect(u).toBe("https://developer.salesforce.com/docs/ai/agentforce/guide");
+        return '<a href="/docs/ai/agentforce/guide/x.html">X</a>';
+      },
+    } as any;
+    const toc = await fetchLwrToc(browser, "ai/agentforce/guide");
+    expect(toc[0].text).toBe("X");
+  });
+  it("accepts a full URL and scopes to its guide path", async () => {
+    const browser = {
+      fetchTextInPage: async () =>
+        '<a href="/docs/ai/agentforce/guide/x.html">X</a><a href="/docs/other/guide/y.html">Y</a>',
+    } as any;
+    const toc = await fetchLwrToc(browser, "https://developer.salesforce.com/docs/ai/agentforce/guide/agent-api.html");
+    expect(toc).toHaveLength(1);
+  });
+  it("throws when the nav parses to zero entries", async () => {
+    const browser = { fetchTextInPage: async () => "<html></html>" } as any;
+    await expect(fetchLwrToc(browser, "ai/agentforce/guide")).rejects.toThrow(/--debug/);
+  });
+});

@@ -69,6 +69,25 @@ export class BrowserManager {
     }
   }
 
+  /** Warm the host once (Akamai), then fetch raw response text from page context. */
+  async fetchTextInPage(url: string): Promise<string> {
+    const page = await this.page();
+    try {
+      const host = new URL(url).origin;
+      if (!this.warmedHosts.has(host)) {
+        await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
+        this.warmedHosts.add(host);
+      }
+      return await page.evaluate(async (u) => {
+        const res = await fetch(u);
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
+        return res.text();
+      }, url);
+    } finally {
+      await page.context().close();
+    }
+  }
+
   /** Navigate to a page, wait for a selector, and return the matched element's HTML. */
   async renderAndExtract(url: string, selector: string, timeoutMs = 30_000): Promise<{ html: string; title: string }> {
     const page = await this.page();

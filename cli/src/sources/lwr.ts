@@ -1,4 +1,7 @@
 import type { TocEntry } from "./atlas";
+import type { BrowserManager } from "../browser";
+import type { DocResult } from "../types";
+import { htmlToMarkdown } from "../markdown";
 
 export interface LwrCatalogEntry {
   id: string;    // "<area>/<guide>", e.g. "ai/agentforce"
@@ -45,4 +48,59 @@ export function parseLwrToc(html: string, guidePath: string): TocEntry[] {
 export function cleanLwrTitle(title: string): string {
   if (!/\|\s*Salesforce Developers\s*$/i.test(title)) return title;
   return title.split("|")[0].trim() || title;
+}
+
+export const LWR_SELECTOR = "main, [data-content], article";
+const LWR_VERSION = "current (unversioned platform)";
+const CATALOG_URL = `${DEV_ORIGIN}/docs/apis`;
+
+export async function fetchLwr(browser: BrowserManager, url: string): Promise<DocResult> {
+  let html: string;
+  let title: string;
+  try {
+    const r = await browser.renderAndExtract(url, LWR_SELECTOR);
+    html = r.html;
+    title = r.title;
+  } catch {
+    const r = await browser.renderFull(url);
+    html = r.html;
+    title = r.title;
+  }
+  const cleanTitle = cleanLwrTitle(title);
+  return {
+    title: cleanTitle,
+    url,
+    source: "lwr",
+    version: LWR_VERSION,
+    html,
+    markdown: htmlToMarkdown(html, { title: cleanTitle, url, source: "lwr", version: LWR_VERSION }),
+  };
+}
+
+export async function listLwrCatalog(browser: BrowserManager): Promise<LwrCatalogEntry[]> {
+  const entries = parseLwrCatalog(await browser.fetchTextInPage(CATALOG_URL));
+  if (entries.length === 0) {
+    throw new Error(`No guides parsed from ${CATALOG_URL} — the page may have changed; retry with --debug`);
+  }
+  return entries;
+}
+
+/** target: "<area>/<guide>" shorthand or a full /docs/... URL. */
+export async function fetchLwrToc(browser: BrowserManager, target: string): Promise<TocEntry[]> {
+  let guidePath: string;
+  let url: string;
+  if (/^https?:\/\//i.test(target)) {
+    const u = new URL(target);
+    const segs = u.pathname.split("/").filter(Boolean); // [docs, area, guide, section?, page.html?]
+    guidePath = segs.slice(1, 4).join("/"); // area/guide/section (e.g. ai/agentforce/guide)
+    url = target;
+  } else {
+    guidePath = target.replace(/^\/+|\/+$/g, "");
+    url = `${DEV_ORIGIN}/docs/${guidePath}`;
+  }
+  const toc = parseLwrToc(await browser.fetchTextInPage(url), guidePath);
+  if (toc.length === 0) {
+    throw new Error(`No TOC links parsed from ${url} (scope /docs/${guidePath}/) — try a page URL inside the guide, or --debug`);
+  }
+  return toc;
 }
