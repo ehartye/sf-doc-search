@@ -70,17 +70,17 @@ program
     await run(async (engine) => {
       const entries = await engine.catalog(cmdOpts.grep);
       if (opts.format === "json") console.log(JSON.stringify(entries, null, 2));
-      else for (const e of entries) console.log(`${e.deliverable}\t${e.title}`);
+      else for (const e of entries) console.log(`${e.deliverable}\t${e.platform}\t${e.title}`);
     }, opts);
   });
 
 program
-  .command("toc <deliverable>")
-  .description("Show the table of contents for one deliverable (e.g. apexcode)")
-  .action(async (deliverable: string) => {
+  .command("toc <target>")
+  .description("Table of contents: an Atlas deliverable (apexcode) or an LWR guide (ai/agentforce/guide)")
+  .action(async (target: string) => {
     const opts = program.opts<GlobalOpts>();
     await run(async (engine) => {
-      const entries = await engine.toc(deliverable);
+      const entries = await engine.toc(target);
       if (opts.format === "json") console.log(JSON.stringify(entries, null, 2));
       else for (const e of entries) console.log(`${e.href ?? "-"}\t${e.text}`);
     }, opts);
