@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchHelp, HELP_ARTICLE_SELECTOR } from "../../src/sources/help";
+import { fetchHelp, HELP_ARTICLE_SELECTOR, stripHelpBoilerplate } from "../../src/sources/help";
 
 describe("help source", () => {
   it("renders the article container and converts to markdown", async () => {
@@ -36,5 +36,38 @@ describe("help source", () => {
     );
     expect(doc.version).toBe("262.0.0");
     expect(doc.markdown).toContain("> Version: 262.0.0");
+  });
+
+  it("fetchHelp strips boilerplate before conversion", async () => {
+    const browser = {
+      renderAndExtract: async () => ({
+        html: '<div>You are here: <ol><li>Docs</li></ol></div><p>Body text that matters.</p>',
+        title: "T | Salesforce",
+      }),
+    } as any;
+    const doc = await fetchHelp(browser, "https://help.salesforce.com/s/articleView?id=x.htm", "help");
+    expect(doc.markdown).not.toContain("You are here");
+    expect(doc.markdown).toContain("Body text that matters.");
+  });
+});
+
+describe("stripHelpBoilerplate", () => {
+  it("removes breadcrumbs, editions/permissions tables, headings, and note icons", () => {
+    const html = `
+      <div>You are here: <ol><li><a href="/">Salesforce Help</a></li><li>Docs</li></ol></div>
+      <h3>Required Editions</h3>
+      <table><tr><td>Available in: Lightning Experience</td></tr></table>
+      <table><tr><th>User Permissions Needed</th></tr><tr><td>To create: X</td></tr></table>
+      <img src="https://cdn/images/icon_note_important.png" alt="Important">
+      <p>Real content stays.</p>
+      <table><tr><th>Feature</th></tr><tr><td>Real table stays</td></tr></table>`;
+    const out = stripHelpBoilerplate(html);
+    expect(out).not.toContain("You are here");
+    expect(out).not.toContain("Available in:");
+    expect(out).not.toContain("User Permissions Needed");
+    expect(out).not.toContain("Required Editions");
+    expect(out).not.toContain("icon_note");
+    expect(out).toContain("Real content stays.");
+    expect(out).toContain("Real table stays");
   });
 });
