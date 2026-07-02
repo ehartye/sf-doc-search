@@ -110,9 +110,10 @@ version when the catalog/TOC offers a choice. No new version-resolution logic.
 
 ## Testing / verification
 
-- The existing `versions-in-sync` test already asserts every `.claude/skills/*`
-  has a byte-identical `.github/skills/*` mirror; adding the new pair extends
-  that coverage automatically — the test must stay green.
+- The `versions-in-sync` test checks mirrors against a hardcoded skill list
+  (`it.each(["sf-docs", "sf-docs-preflight"])`), not a dynamic glob, so the new
+  skill must be added to that list; once added it byte-compares source vs mirror
+  and must stay green.
 - Manual live check: run the skill for one topic (e.g. "async Apex") and confirm
   the produced `./sf-reference/async-apex.md` has (a) only official URLs in
   References, (b) a populated Gaps section or an explicit "None", and (c) version
