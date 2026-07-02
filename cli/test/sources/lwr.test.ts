@@ -132,13 +132,34 @@ describe("listLwrCatalog", () => {
       },
     } as any;
     const entries = await listLwrCatalog(browser);
-    expect(entries).toEqual([
+    expect(entries).toContainEqual(
       { id: "ai/agentforce", title: "Agentforce", url: "https://developer.salesforce.com/docs/ai/agentforce" },
-    ]);
+    );
   });
   it("throws (not empty) when the page parses to zero entries", async () => {
     const browser = { fetchTextInPage: async () => "<html>redesigned</html>" } as any;
     await expect(listLwrCatalog(browser)).rejects.toThrow(/docs\/apis/);
+  });
+  it("merges seed roots (Agentforce, LWC, Mobile SDK) into the parsed catalog", async () => {
+    const browser = {
+      fetchTextInPage: async () => '<a href="/docs/marketing/pardot/overview">Account Engagement</a>',
+    } as any;
+    const entries = await listLwrCatalog(browser);
+    const ids = entries.map((e) => e.id);
+    expect(ids).toContain("marketing/pardot");
+    expect(ids).toContain("ai/agentforce");
+    expect(ids).toContain("platform/lwc");
+    expect(ids).toContain("platform/mobile-sdk");
+    expect(entries.find((e) => e.id === "ai/agentforce")!.title).toBe("Agentforce Developer Guide");
+  });
+  it("a parsed entry wins over a seed with the same id", async () => {
+    const browser = {
+      fetchTextInPage: async () => '<a href="/docs/ai/agentforce/overview">Agentforce (fresh from page)</a>',
+    } as any;
+    const entries = await listLwrCatalog(browser);
+    const af = entries.filter((e) => e.id === "ai/agentforce");
+    expect(af).toHaveLength(1);
+    expect(af[0].title).toBe("Agentforce (fresh from page)");
   });
 });
 

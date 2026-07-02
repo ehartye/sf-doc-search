@@ -93,12 +93,26 @@ export async function fetchLwr(browser: BrowserManager, url: string): Promise<Do
   };
 }
 
+/** Notable LWR doc sets NOT listed on /docs/apis (it enumerates API doc sets only).
+ *  Verified live 2026-07-02. Additive: a parsed entry with the same id wins. */
+export const LWR_SEED_ROOTS: Array<{ id: string; title: string }> = [
+  { id: "ai/agentforce", title: "Agentforce Developer Guide" },
+  { id: "platform/lwc", title: "Lightning Web Components Developer Guide" },
+  { id: "platform/mobile-sdk", title: "Mobile SDK Development Guide" },
+];
+
 export async function listLwrCatalog(browser: BrowserManager): Promise<LwrCatalogEntry[]> {
   const entries = parseLwrCatalog(await browser.fetchTextInPage(CATALOG_URL));
   if (entries.length === 0) {
     throw new Error(`No guides parsed from ${CATALOG_URL} — the page may have changed; retry with --debug`);
   }
-  return entries;
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  for (const seed of LWR_SEED_ROOTS) {
+    if (!byId.has(seed.id)) {
+      byId.set(seed.id, { id: seed.id, title: seed.title, url: `${DEV_ORIGIN}/docs/${seed.id}` });
+    }
+  }
+  return [...byId.values()];
 }
 
 /**
