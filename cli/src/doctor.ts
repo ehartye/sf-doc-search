@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { BrowserManager } from "./browser";
 
 export interface DoctorCheck {
@@ -21,6 +21,23 @@ export function checkNode(nodeVersion: string): DoctorCheck {
     ok,
     detail: ok ? `Node ${nodeVersion} (>= 20)` : `Node ${nodeVersion} is too old — sf-docs needs Node >= 20`,
   };
+}
+
+/**
+ * Locate the plugin root by walking up from `startDir` (the running CLI's dir) until a
+ * `.claude-plugin/plugin.json` is found. Lets `doctor` verify the CLI/plugin version match
+ * without depending on CLAUDE_PLUGIN_ROOT (which isn't set in a skill's shell). Returns
+ * undefined for a standalone/global install (no plugin manifest nearby) — which is correct.
+ */
+export function findPluginRoot(startDir: string, exists: (p: string) => boolean = existsSync): string | undefined {
+  let dir = startDir;
+  for (let i = 0; i < 8; i++) {
+    if (exists(join(dir, ".claude-plugin", "plugin.json"))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
 }
 
 /** Read the installed plugin's declared version from <pluginRoot>/.claude-plugin/plugin.json. */
@@ -59,10 +76,12 @@ export async function runDoctor(
   cliVersion: string,
   browser: Pick<BrowserManager, "probe">,
   env: Record<string, string | undefined> = process.env,
+  cliDir?: string,
 ): Promise<DoctorReport> {
   const node = checkNode(process.version);
 
-  const pluginRoot = env.CLAUDE_PLUGIN_ROOT;
+  // Prefer an explicit CLAUDE_PLUGIN_ROOT; otherwise self-locate the manifest from the CLI's dir.
+  const pluginRoot = env.CLAUDE_PLUGIN_ROOT ?? (cliDir ? findPluginRoot(cliDir) : undefined);
   const version = checkPluginVersion(cliVersion, pluginRoot ? readPluginVersion(pluginRoot) : undefined);
 
   const probe = await browser.probe();

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { checkNode, checkPluginVersion, readPluginVersion, runDoctor } from "../src/doctor";
+import { join } from "node:path";
+import { checkNode, checkPluginVersion, findPluginRoot, readPluginVersion, runDoctor } from "../src/doctor";
 
 describe("doctor helpers", () => {
   it("passes Node >= 20", () => {
@@ -33,6 +34,16 @@ describe("doctor helpers", () => {
   });
   it("returns undefined when the plugin manifest can't be read", () => {
     expect(readPluginVersion("/fake/root", () => { throw new Error("nope"); })).toBeUndefined();
+  });
+
+  it("finds the plugin root by walking up to .claude-plugin/plugin.json", () => {
+    const root = join("/a/b/c");
+    const start = join(root, "cli", "dist");
+    const target = join(root, ".claude-plugin", "plugin.json");
+    expect(findPluginRoot(start, (p) => p === target)).toBe(root);
+  });
+  it("returns undefined when no plugin manifest is found while walking up", () => {
+    expect(findPluginRoot(join("/x/y/z/cli/dist"), () => false)).toBeUndefined();
   });
 });
 

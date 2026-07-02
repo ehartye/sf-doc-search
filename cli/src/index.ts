@@ -2,6 +2,8 @@ import { Command } from "commander";
 import { BrowserManager } from "./browser";
 import { Engine } from "./engine";
 import { formatDoc, type Format } from "./format";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import { runDoctor } from "./doctor";
 import pkg from "../package.json";
 
@@ -39,7 +41,7 @@ program
   .action(async () => {
     const browser = new BrowserManager({ debug: program.opts<GlobalOpts>().debug });
     try {
-      const report = await runDoctor(pkg.version, browser);
+      const report = await runDoctor(pkg.version, browser, process.env, dirname(fileURLToPath(import.meta.url)));
       for (const c of report.checks) console.log(`${c.ok ? "OK  " : "!!  "}${c.name}: ${c.detail}`);
       console.log(report.ok ? "\nsf-docs is ready." : "\nsf-docs is NOT ready — resolve the !! items above.");
       if (!report.ok) process.exitCode = 1;
