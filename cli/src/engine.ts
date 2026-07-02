@@ -37,7 +37,7 @@ export class Engine {
       case "trailhead":
         result = await fetchTrailhead(this.browser, r.url);
         break;
-      case "atlas-lwr":
+      case "lwr":
       case "generic":
         result = await fetchTrailhead(this.browser, r.url); // render+extract is the same shape
         result = { ...result, source: r.source };

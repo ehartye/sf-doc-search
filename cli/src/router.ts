@@ -73,7 +73,7 @@ export function route(input: string): RouteResult {
     if (path.includes("/atlas.")) {
       return { source: "atlas", url: trimmed, atlas: parseAtlasFromPath(path) };
     }
-    return { source: "atlas-lwr", url: trimmed };
+    return { source: "lwr", url: trimmed };
   }
 
   if (host === "help.salesforce.com") {

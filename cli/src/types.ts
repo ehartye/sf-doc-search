@@ -1,6 +1,6 @@
 export type Source =
   | "atlas"        // developer.salesforce.com Atlas JSON API
-  | "atlas-lwr"    // developer.salesforce.com server-rendered narrative docs
+  | "lwr"          // developer.salesforce.com LWR docs platform (server-rendered narrative docs)
   | "component"    // LWC/Aura component library (cx-router)
   | "help"         // help.salesforce.com article (shadow DOM)
   | "release"      // release notes (Help article, release-notes.* id)
