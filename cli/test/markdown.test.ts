@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { htmlToMarkdown } from "../src/markdown";
+import { htmlToMarkdown, todayISO } from "../src/markdown";
 
 describe("htmlToMarkdown", () => {
   const meta = { title: "What is Apex?", url: "https://developer.salesforce.com/x", source: "atlas" as const, version: "262.0" };
@@ -50,5 +50,9 @@ describe("htmlToMarkdown", () => {
   it("defaults the retrieved date to today (ISO)", () => {
     const md = htmlToMarkdown("<p>x</p>", { title: "T", url: "https://u", source: "help" });
     expect(md).toMatch(/> Retrieved: \d{4}-\d{2}-\d{2} via sf-docs \(help\)/);
+  });
+
+  it("todayISO returns a YYYY-MM-DD string", () => {
+    expect(todayISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

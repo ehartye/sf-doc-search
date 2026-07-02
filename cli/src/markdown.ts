@@ -41,9 +41,14 @@ export interface DocMeta {
   retrieved?: string; // ISO date; defaults to today (UTC)
 }
 
+/** Today's date (UTC) in ISO YYYY-MM-DD, the format provenance headers carry. */
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function htmlToMarkdown(html: string, meta: DocMeta): string {
   const body = td.turndown(html).trim();
-  const retrieved = meta.retrieved ?? new Date().toISOString().slice(0, 10);
+  const retrieved = meta.retrieved ?? todayISO();
   const header = [
     `# ${meta.title}`,
     "",

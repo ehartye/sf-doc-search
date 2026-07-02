@@ -1,5 +1,6 @@
 import type { BrowserManager } from "../browser";
 import type { ComponentRef, DocResult } from "../types";
+import { todayISO } from "../markdown";
 
 export function componentUrl(ref: ComponentRef): string {
   const q = encodeURIComponent;
@@ -15,7 +16,7 @@ export async function fetchComponent(browser: BrowserManager, ref: ComponentRef)
     `# ${title}`,
     "",
     `> Source: ${url}`,
-    `> Retrieved: ${new Date().toISOString().slice(0, 10)} via sf-docs (component)`,
+    `> Retrieved: ${todayISO()} via sf-docs (component)`,
     "",
     r.global?.description ?? "",
     "",
