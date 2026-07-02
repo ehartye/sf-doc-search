@@ -59,6 +59,8 @@ describe("stripHelpBoilerplate", () => {
       <table><tr><td>Available in: Lightning Experience</td></tr></table>
       <table><tr><th>User Permissions Needed</th></tr><tr><td>To create: X</td></tr></table>
       <img src="https://cdn/images/icon_note_important.png" alt="Important">
+      <img src="https://cdn/images/icon_important.png" alt="Important">
+      <img src="https://cdn/images/icon_white.png" alt="">
       <p>Real content stays.</p>
       <table><tr><th>Feature</th></tr><tr><td>Real table stays</td></tr></table>`;
     const out = stripHelpBoilerplate(html);
@@ -67,6 +69,8 @@ describe("stripHelpBoilerplate", () => {
     expect(out).not.toContain("User Permissions Needed");
     expect(out).not.toContain("Required Editions");
     expect(out).not.toContain("icon_note");
+    expect(out).not.toContain("icon_important");
+    expect(out).not.toContain("icon_white");
     expect(out).toContain("Real content stays.");
     expect(out).toContain("Real table stays");
   });

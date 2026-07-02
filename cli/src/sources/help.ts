@@ -7,7 +7,7 @@ import { htmlToMarkdown } from "../markdown";
 export const HELP_ARTICLE_SELECTOR = ".slds-text-longform, .test-id__article-body, article";
 
 /** Remove Help-article chrome that adds noise to Markdown: breadcrumbs,
- *  Required Editions / User Permissions tables, and note/warning/tip icons. */
+ *  Required Editions / User Permissions tables, and decorative callout icons (icon_*.png). */
 export function stripHelpBoilerplate(html: string): string {
   return html
     .replace(/You are here:[\s\S]*?<\/ol>/gi, "")
@@ -15,7 +15,7 @@ export function stripHelpBoilerplate(html: string): string {
     .replace(/<table[\s\S]*?<\/table>/gi, (t) =>
       /Available in:|User Permissions Needed|Required Editions/i.test(t) ? "" : t,
     )
-    .replace(/<img[^>]*icon_note[^>]*>/gi, "");
+    .replace(/<img[^>]*\/icon_[a-z_]+\.(?:png|gif|svg)[^>]*>/gi, "");
 }
 
 export async function fetchHelp(browser: BrowserManager, url: string, source: Source): Promise<DocResult> {
