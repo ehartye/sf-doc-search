@@ -236,4 +236,26 @@ describe("fetchLwrTocDeep", () => {
       console.error = orig;
     }
   });
+
+  it("warns on systemic child failures (HTTP errors) but stays silent on leaf pages", async () => {
+    const failing = {
+      fetchTextInPage: async (u: string) => {
+        if (u.endsWith("/s1.html")) throw new Error("HTTP 500 for " + u); // systemic
+        return NAVS[u] ?? "<html></html>"; // s2 ok; s2-child is a silent leaf
+      },
+    } as any;
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const toc = await fetchLwrTocDeep(failing, "ai/agentforce/guide", 3);
+      expect(toc.map((t) => t.text).sort()).toEqual(["S1", "S2", "S2 Child"]);
+      // the HTTP failure is surfaced...
+      expect(warnings.some((w) => w.includes("HTTP 500") && w.includes("s1.html"))).toBe(true);
+      // ...but the leaf page (No TOC links parsed) is not
+      expect(warnings.some((w) => w.includes("s2-child"))).toBe(false);
+    } finally {
+      console.error = orig;
+    }
+  });
 });

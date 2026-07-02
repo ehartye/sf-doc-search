@@ -145,8 +145,11 @@ export async function fetchLwrToc(browser: BrowserManager, target: string): Prom
 /**
  * Breadth-first expansion of the hierarchical LWR nav: fetch the target's toc,
  * then fetch each new entry's page and merge its scoped toc, `depth` levels deep.
- * Deduped by href; pages already seen are not re-fetched; a child page whose nav
- * yields nothing (leaf) is skipped. Hard cap guards against runaway guides.
+ * Deduped by href; a discovered entry is expanded at most once (the target itself
+ * may be re-fetched if its nav self-links). A child page whose nav yields nothing
+ * (leaf) is skipped silently; any OTHER failure (HTTP error, dead docs page) is
+ * surfaced as a warning so a systemic mid-run failure can't masquerade as leaves.
+ * Hard cap guards against runaway guides.
  */
 export async function fetchLwrTocDeep(
   browser: BrowserManager,
@@ -166,8 +169,13 @@ export async function fetchLwrTocDeep(
       let children: TocEntry[];
       try {
         children = await fetchLwrToc(browser, entry.href!);
-      } catch {
-        continue; // leaf page or transient parse failure — expansion is best-effort
+      } catch (err) {
+        // Leaf pages throw fetchLwrToc's zero-entries sentinel — that's expected.
+        // Anything else (HTTP error, crashed docs page) must not hide behind it.
+        if (!/No TOC links parsed/.test((err as Error).message)) {
+          console.error(`sf-docs warning: skipping ${entry.href}: ${(err as Error).message}`);
+        }
+        continue;
       }
       for (const c of children) {
         if (!c.href || seen.has(c.href)) continue;
