@@ -6,7 +6,7 @@ import { fetchAtlasDoc, listCatalog, fetchToc, type CatalogEntry, type TocEntry 
 import { fetchComponent } from "./sources/component";
 import { fetchHelp } from "./sources/help";
 import { fetchTrailhead } from "./sources/trailhead";
-import { fetchLwr, listLwrCatalog, fetchLwrToc } from "./sources/lwr";
+import { fetchLwr, listLwrCatalog, fetchLwrToc, fetchLwrTocDeep } from "./sources/lwr";
 import { coveoSearch, type CoveoResult, type CoveoSource } from "./coveo";
 
 export class Engine {
@@ -53,7 +53,9 @@ export class Engine {
   }
 
   async catalog(grep?: string): Promise<CatalogEntry[]> {
-    const key = "catalog:v2";
+    // Key versioned with catalog SHAPE/CONTENT changes so an upgraded CLI never
+    // serves a stale pre-upgrade catalog from disk (v2: platform field; v3: seed roots).
+    const key = "catalog:v3";
     let all = this.cache.get<CatalogEntry[]>(key);
     if (!all) {
       const atlas = await listCatalog(this.browser);
@@ -78,8 +80,11 @@ export class Engine {
     return all.filter((c) => c.deliverable.toLowerCase().includes(q) || c.title.toLowerCase().includes(q));
   }
 
-  async toc(target: string): Promise<TocEntry[]> {
-    if (target.includes("/")) return fetchLwrToc(this.browser, target);
+  async toc(target: string, depth = 1): Promise<TocEntry[]> {
+    if (target.includes("/")) {
+      return depth > 1 ? fetchLwrTocDeep(this.browser, target, depth) : fetchLwrToc(this.browser, target);
+    }
+    if (depth > 1) console.error("sf-docs warning: --depth is ignored for Atlas deliverables (their toc is already the full tree)");
     return fetchToc(this.browser, target);
   }
 

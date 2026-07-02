@@ -93,12 +93,26 @@ export async function fetchLwr(browser: BrowserManager, url: string): Promise<Do
   };
 }
 
+/** Notable LWR doc sets NOT listed on /docs/apis (it enumerates API doc sets only).
+ *  Verified live 2026-07-02. Additive: a parsed entry with the same id wins. */
+export const LWR_SEED_ROOTS: Array<{ id: string; title: string }> = [
+  { id: "ai/agentforce", title: "Agentforce Developer Guide" },
+  { id: "platform/lwc", title: "Lightning Web Components Developer Guide" },
+  { id: "platform/mobile-sdk", title: "Mobile SDK Development Guide" },
+];
+
 export async function listLwrCatalog(browser: BrowserManager): Promise<LwrCatalogEntry[]> {
   const entries = parseLwrCatalog(await browser.fetchTextInPage(CATALOG_URL));
   if (entries.length === 0) {
     throw new Error(`No guides parsed from ${CATALOG_URL} — the page may have changed; retry with --debug`);
   }
-  return entries;
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  for (const seed of LWR_SEED_ROOTS) {
+    if (!byId.has(seed.id)) {
+      byId.set(seed.id, { id: seed.id, title: seed.title, url: `${DEV_ORIGIN}/docs/${seed.id}` });
+    }
+  }
+  return [...byId.values()];
 }
 
 /**
@@ -126,4 +140,55 @@ export async function fetchLwrToc(browser: BrowserManager, target: string): Prom
     throw new Error(`No TOC links parsed from ${url} (scope /docs/${guidePath}/) — try a page URL inside the guide, or --debug`);
   }
   return toc;
+}
+
+/**
+ * Breadth-first expansion of the hierarchical LWR nav: fetch the target's toc,
+ * then fetch each new entry's page and merge its scoped toc, `depth` levels deep.
+ * Deduped by href; a discovered entry is expanded at most once (the target itself
+ * may be re-fetched if its nav self-links). A child page whose nav yields nothing
+ * (leaf) is skipped silently; any OTHER failure (HTTP error, dead docs page) is
+ * surfaced as a warning so a systemic mid-run failure can't masquerade as leaves.
+ * Hard cap guards against runaway guides.
+ */
+export async function fetchLwrTocDeep(
+  browser: BrowserManager,
+  target: string,
+  depth = 1,
+  cap = 150,
+): Promise<TocEntry[]> {
+  const first = await fetchLwrToc(browser, target);
+  const seen = new Map<string, TocEntry>(first.filter((e) => e.href).map((e) => [e.href!, e]));
+  let frontier = [...seen.values()];
+  let truncated = false;
+
+  for (let level = 2; level <= depth; level++) {
+    const next: TocEntry[] = [];
+    for (const entry of frontier) {
+      if (seen.size >= cap) { truncated = true; break; }
+      let children: TocEntry[];
+      try {
+        children = await fetchLwrToc(browser, entry.href!);
+      } catch (err) {
+        // Leaf pages throw fetchLwrToc's zero-entries sentinel — that's expected.
+        // Anything else (HTTP error, crashed docs page) must not hide behind it.
+        if (!/No TOC links parsed/.test((err as Error).message)) {
+          console.error(`sf-docs warning: skipping ${entry.href}: ${(err as Error).message}`);
+        }
+        continue;
+      }
+      for (const c of children) {
+        if (!c.href || seen.has(c.href)) continue;
+        if (seen.size >= cap) { truncated = true; break; }
+        seen.set(c.href, c);
+        next.push(c);
+      }
+    }
+    if (truncated || next.length === 0) break;
+    frontier = next;
+  }
+  if (truncated) {
+    console.error(`sf-docs warning: toc truncated at ${cap} entries — narrow the target or reduce --depth`);
+  }
+  return [...seen.values()];
 }

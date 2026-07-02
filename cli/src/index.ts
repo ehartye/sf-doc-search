@@ -80,10 +80,12 @@ program
 program
   .command("toc <target>")
   .description("Table of contents: an Atlas deliverable (apexcode) or an LWR guide (ai/agentforce/guide)")
-  .action(async (target: string) => {
+  .option("--depth <n>", "expand LWR toc this many levels (1-3)", "1")
+  .action(async (target: string, cmdOpts: { depth: string }) => {
     const opts = program.opts<GlobalOpts>();
+    const depth = Math.min(3, Math.max(1, Number.parseInt(cmdOpts.depth, 10) || 1));
     await run(async (engine) => {
-      const entries = await engine.toc(target);
+      const entries = await engine.toc(target, depth);
       if (opts.format === "json") console.log(JSON.stringify(entries, null, 2));
       else for (const e of entries) console.log(`${e.href ?? "-"}\t${e.text}`);
     }, opts);

@@ -94,7 +94,7 @@ describe("cleanLwrTitle", () => {
   });
 });
 
-import { fetchLwr, listLwrCatalog, fetchLwrToc } from "../../src/sources/lwr";
+import { fetchLwr, listLwrCatalog, fetchLwrToc, fetchLwrTocDeep } from "../../src/sources/lwr";
 
 const CATALOG_URL = "https://developer.salesforce.com/docs/apis";
 
@@ -132,13 +132,34 @@ describe("listLwrCatalog", () => {
       },
     } as any;
     const entries = await listLwrCatalog(browser);
-    expect(entries).toEqual([
+    expect(entries).toContainEqual(
       { id: "ai/agentforce", title: "Agentforce", url: "https://developer.salesforce.com/docs/ai/agentforce" },
-    ]);
+    );
   });
   it("throws (not empty) when the page parses to zero entries", async () => {
     const browser = { fetchTextInPage: async () => "<html>redesigned</html>" } as any;
     await expect(listLwrCatalog(browser)).rejects.toThrow(/docs\/apis/);
+  });
+  it("merges seed roots (Agentforce, LWC, Mobile SDK) into the parsed catalog", async () => {
+    const browser = {
+      fetchTextInPage: async () => '<a href="/docs/marketing/pardot/overview">Account Engagement</a>',
+    } as any;
+    const entries = await listLwrCatalog(browser);
+    const ids = entries.map((e) => e.id);
+    expect(ids).toContain("marketing/pardot");
+    expect(ids).toContain("ai/agentforce");
+    expect(ids).toContain("platform/lwc");
+    expect(ids).toContain("platform/mobile-sdk");
+    expect(entries.find((e) => e.id === "ai/agentforce")!.title).toBe("Agentforce Developer Guide");
+  });
+  it("a parsed entry wins over a seed with the same id", async () => {
+    const browser = {
+      fetchTextInPage: async () => '<a href="/docs/ai/agentforce/overview">Agentforce (fresh from page)</a>',
+    } as any;
+    const entries = await listLwrCatalog(browser);
+    const af = entries.filter((e) => e.id === "ai/agentforce");
+    expect(af).toHaveLength(1);
+    expect(af[0].title).toBe("Agentforce (fresh from page)");
   });
 });
 
@@ -172,5 +193,69 @@ describe("fetchLwrToc", () => {
     } as any;
     const toc = await fetchLwrToc(browser, "https://developer.salesforce.com/docs/ai/agentforce");
     expect(toc).toHaveLength(2); // both sections' links pass the root scope (nav itself is hierarchical)
+  });
+});
+
+describe("fetchLwrTocDeep", () => {
+  // Level 1 at the guide root lists two sections; each section page lists children.
+  const NAVS: Record<string, string> = {
+    "https://developer.salesforce.com/docs/ai/agentforce/guide":
+      '<a href="/docs/ai/agentforce/guide/s1.html">S1</a><a href="/docs/ai/agentforce/guide/s2.html">S2</a>',
+    "https://developer.salesforce.com/docs/ai/agentforce/guide/s1.html":
+      '<a href="/docs/ai/agentforce/guide/s1.html">S1</a><a href="/docs/ai/agentforce/guide/s1-child.html">S1 Child</a>',
+    "https://developer.salesforce.com/docs/ai/agentforce/guide/s2.html":
+      '<a href="/docs/ai/agentforce/guide/s2-child.html">S2 Child</a>',
+  };
+  const browser = { fetchTextInPage: async (u: string) => NAVS[u] ?? "<html></html>" } as any;
+
+  it("depth 1 equals plain fetchLwrToc", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 1);
+    expect(toc.map((t) => t.text)).toEqual(["S1", "S2"]);
+  });
+
+  it("depth 2 merges children, deduped, without re-fetching seen pages", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 2);
+    expect(toc.map((t) => t.text).sort()).toEqual(["S1", "S1 Child", "S2", "S2 Child"]);
+  });
+
+  it("expansion tolerates child pages with no nav (leaf pages throw inside fetchLwrToc)", async () => {
+    const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 3);
+    // s1-child/s2-child have no nav entries -> their fetch throws -> skipped, no crash
+    expect(toc).toHaveLength(4);
+  });
+
+  it("caps the merged toc and warns", async () => {
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const toc = await fetchLwrTocDeep(browser, "ai/agentforce/guide", 2, 3);
+      expect(toc.length).toBeLessThanOrEqual(3);
+      expect(warnings.some((w) => w.includes("truncated"))).toBe(true);
+    } finally {
+      console.error = orig;
+    }
+  });
+
+  it("warns on systemic child failures (HTTP errors) but stays silent on leaf pages", async () => {
+    const failing = {
+      fetchTextInPage: async (u: string) => {
+        if (u.endsWith("/s1.html")) throw new Error("HTTP 500 for " + u); // systemic
+        return NAVS[u] ?? "<html></html>"; // s2 ok; s2-child is a silent leaf
+      },
+    } as any;
+    const warnings: string[] = [];
+    const orig = console.error;
+    console.error = (m: string) => { warnings.push(String(m)); };
+    try {
+      const toc = await fetchLwrTocDeep(failing, "ai/agentforce/guide", 3);
+      expect(toc.map((t) => t.text).sort()).toEqual(["S1", "S2", "S2 Child"]);
+      // the HTTP failure is surfaced...
+      expect(warnings.some((w) => w.includes("HTTP 500") && w.includes("s1.html"))).toBe(true);
+      // ...but the leaf page (No TOC links parsed) is not
+      expect(warnings.some((w) => w.includes("s2-child"))).toBe(false);
+    } finally {
+      console.error = orig;
+    }
   });
 });

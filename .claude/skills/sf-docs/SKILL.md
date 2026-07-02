@@ -28,13 +28,14 @@ Run `sf-docs <command>`. If `sf-docs` is not found on PATH, run `npx sf-docs <co
    - `sf-docs catalog --grep "<topic>"` to find the right entry. The catalog spans BOTH
      platforms: classic Atlas books (platform `atlas`, e.g. `apexcode`) and newer LWR
      API doc sets (platform `lwr`, e.g. `platform/pub-sub-api`). LWR rows come from the
-     /docs/apis directory, so non-API LWR doc sets (e.g. `ai/agentforce`) may be absent —
-     they are still fully fetchable by URL (next bullets).
+     /docs/apis directory plus a seeded list of notable doc sets (`ai/agentforce`,
+     `platform/lwc`, `platform/mobile-sdk`); anything still missing is fully fetchable
+     by URL (next bullets).
    - Atlas: `sf-docs toc <deliverable>` then `sf-docs fetch "<deliverable>/<page>.htm"`.
    - LWR: the nav is hierarchical — `sf-docs toc <catalog-id>/guide` (e.g.
-     `ai/agentforce/guide`) lists that level's sections; run `sf-docs toc "<entry url>"`
-     on a result to expand its section, drilling down until you see the page you
-     need, then `sf-docs fetch "<page url>"`.
+     `ai/agentforce/guide`) lists that level's sections; add `--depth 2` (max 3) to
+     expand sub-levels in one call, or run `sf-docs toc "<entry url>"` on a result to
+     expand just that section. Then `sf-docs fetch "<page url>"`.
    - If the catalog misses a developer topic, newer content lives at
      `developer.salesforce.com/docs/<area>/<guide>` — fetch such URLs directly,
      or fall through to step 5's domain-restricted web search to find them.

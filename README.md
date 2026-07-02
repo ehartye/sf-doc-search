@@ -88,7 +88,7 @@ skill, which wraps this and is referenced as the first step by the `sf-docs` ski
 sf-docs fetch "<url>" ["<url>" ...]         # any supported source -> Markdown; multiple URLs share one browser
 sf-docs catalog --grep apex                 # find a doc set (columns: id, platform atlas|lwr, title)
 sf-docs toc apexcode                        # Atlas book table of contents
-sf-docs toc ai/agentforce/guide             # LWR guide nav (hierarchical: rerun on an entry URL to drill down)
+sf-docs toc ai/agentforce/guide --depth 2   # LWR guide nav (hierarchical; --depth 1-3 expands sub-levels in one call)
 sf-docs component lightning button          # LWC component reference
 sf-docs search "sharing rules" --source help
 ```
@@ -96,8 +96,9 @@ sf-docs search "sharing rules" --source help
 Flags: `--format md|html|json`, `--debug` (headed browser), `--no-cache`.
 
 - `search --all-results` — include non-official domains and localized variants (default output is official Salesforce domains, English only)
-- The LWR catalog rows come from the `/docs/apis` directory (API doc sets); LWR doc
-  sets not listed there (e.g. `ai/agentforce`) are still fully fetchable by URL.
+- LWR catalog rows come from the `/docs/apis` directory plus a seeded list of notable
+  doc sets (`ai/agentforce`, `platform/lwc`, `platform/mobile-sdk`); anything still
+  missing is fully fetchable by URL.
 - Every fetch's provenance header carries the source URL, doc version (or release),
   and retrieved date.
 
