@@ -1,4 +1,4 @@
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 
 export interface BrowserOptions {
   debug?: boolean;
@@ -17,6 +17,8 @@ const DEV_DOCS_WARMUP = "https://developer.salesforce.com/docs";
 
 export class BrowserManager {
   private browser?: Browser;
+  private ctx?: BrowserContext;
+  private docsPage?: Page; // persistent page parked on DEV_DOCS_WARMUP for evaluate-fetches
   constructor(private opts: BrowserOptions = {}) {}
 
   private async launch(): Promise<Browser> {
@@ -31,10 +33,27 @@ export class BrowserManager {
     return this.browser;
   }
 
-  private async page(): Promise<Page> {
+  /** One context for the manager's lifetime — Akamai cookies persist across calls. */
+  private async context(): Promise<BrowserContext> {
+    if (this.ctx) return this.ctx;
     const browser = await this.launch();
-    const ctx = await browser.newContext({ userAgent: undefined });
-    return ctx.newPage();
+    this.ctx = await browser.newContext({ userAgent: undefined });
+    return this.ctx;
+  }
+
+  private async page(): Promise<Page> {
+    return (await this.context()).newPage();
+  }
+
+  /** Persistent page navigated once to the docs origin. Evaluate-fetches run from it:
+   *  same-origin to developer.salesforce.com, cookies live in the shared context, and
+   *  no repeat warmup navigation. (A fresh page would sit on about:blank and its
+   *  fetch() would be cross-origin — that's why this page persists.) */
+  private async docs(): Promise<Page> {
+    if (this.docsPage && !this.docsPage.isClosed()) return this.docsPage;
+    this.docsPage = await this.page();
+    await this.docsPage.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
+    return this.docsPage;
   }
 
   /** Attempt to launch the browser (system Chrome or bundled Chromium) and report success. */
@@ -49,38 +68,24 @@ export class BrowserManager {
     }
   }
 
-  /** Warm the page so Akamai cookies are present, then fetch JSON from page context.
-   *  The warmup must run on EVERY call: each call gets a fresh browser context, and
-   *  Akamai cookies live per-context — a remembered "warmed host" from a previous
-   *  context is useless and produces "Failed to fetch" (found via live testing). */
+  /** Fetch JSON from the persistent docs page's context (Akamai cleared once per process). */
   async fetchJsonInPage(url: string): Promise<any> {
-    const page = await this.page();
-    try {
-      await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      return await page.evaluate(async (u) => {
-        const res = await fetch(u, { headers: { accept: "application/json" } });
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
-        return res.json();
-      }, url);
-    } finally {
-      await page.context().close();
-    }
+    const page = await this.docs();
+    return page.evaluate(async (u) => {
+      const res = await fetch(u, { headers: { accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
+      return res.json();
+    }, url);
   }
 
-  /** Warm the page (Akamai), then fetch raw response text from page context.
-   *  Warmup runs every call — see fetchJsonInPage for why. */
+  /** Fetch raw response text from the persistent docs page's context. */
   async fetchTextInPage(url: string): Promise<string> {
-    const page = await this.page();
-    try {
-      await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      return await page.evaluate(async (u) => {
-        const res = await fetch(u);
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
-        return res.text();
-      }, url);
-    } finally {
-      await page.context().close();
-    }
+    const page = await this.docs();
+    return page.evaluate(async (u) => {
+      const res = await fetch(u);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
+      return res.text();
+    }, url);
   }
 
   /** Navigate to a page, wait for a selector, and return the matched element's HTML. */
@@ -101,7 +106,7 @@ export class BrowserManager {
       const title = await page.title();
       return { html, title };
     } finally {
-      await page.context().close();
+      await page.close();
     }
   }
 
@@ -114,7 +119,7 @@ export class BrowserManager {
       const title = await page.title();
       return { html, title };
     } finally {
-      await page.context().close();
+      await page.close();
     }
   }
 
@@ -134,7 +139,7 @@ export class BrowserManager {
         return res.json();
       }, { u: url, b: body });
     } finally {
-      await page.context().close();
+      await page.close();
     }
   }
 
@@ -189,12 +194,14 @@ export class BrowserManager {
       if (!token) throw new Error("Could not capture Coveo token");
       return token;
     } finally {
-      await page.context().close();
+      await page.close();
     }
   }
 
   async close(): Promise<void> {
-    await this.browser?.close();
+    await this.browser?.close(); // closes the context and all pages with it
     this.browser = undefined;
+    this.ctx = undefined;
+    this.docsPage = undefined;
   }
 }
