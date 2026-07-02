@@ -17,7 +17,6 @@ const DEV_DOCS_WARMUP = "https://developer.salesforce.com/docs";
 
 export class BrowserManager {
   private browser?: Browser;
-  private warmedHosts = new Set<string>();
   constructor(private opts: BrowserOptions = {}) {}
 
   private async launch(): Promise<Browser> {
@@ -50,15 +49,14 @@ export class BrowserManager {
     }
   }
 
-  /** Warm a host once so Akamai cookies are present, then fetch JSON from page context. */
+  /** Warm the page so Akamai cookies are present, then fetch JSON from page context.
+   *  The warmup must run on EVERY call: each call gets a fresh browser context, and
+   *  Akamai cookies live per-context — a remembered "warmed host" from a previous
+   *  context is useless and produces "Failed to fetch" (found via live testing). */
   async fetchJsonInPage(url: string): Promise<any> {
     const page = await this.page();
     try {
-      const host = new URL(url).origin;
-      if (!this.warmedHosts.has(host)) {
-        await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
-        this.warmedHosts.add(host);
-      }
+      await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
       return await page.evaluate(async (u) => {
         const res = await fetch(u, { headers: { accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);
@@ -69,15 +67,12 @@ export class BrowserManager {
     }
   }
 
-  /** Warm the host once (Akamai), then fetch raw response text from page context. */
+  /** Warm the page (Akamai), then fetch raw response text from page context.
+   *  Warmup runs every call — see fetchJsonInPage for why. */
   async fetchTextInPage(url: string): Promise<string> {
     const page = await this.page();
     try {
-      const host = new URL(url).origin;
-      if (!this.warmedHosts.has(host)) {
-        await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
-        this.warmedHosts.add(host);
-      }
+      await page.goto(DEV_DOCS_WARMUP, { waitUntil: "domcontentloaded", timeout: 45_000 });
       return await page.evaluate(async (u) => {
         const res = await fetch(u);
         if (!res.ok) throw new Error(`HTTP ${res.status} for ${u}`);

@@ -40,6 +40,25 @@ describe("parseLwrCatalog", () => {
   it("returns [] on link-free HTML", () => {
     expect(parseLwrCatalog("<html><body>redesigned</body></html>")).toEqual([]);
   });
+  it("extracts entries from web-component cards (the real /docs/apis markup — no <a> tags)", () => {
+    // Live /docs/apis renders links on <dx-card-docs>/<dx-button>, not anchors.
+    const html = `
+      <dx-card-docs
+        href="/docs/marketing/pardot/overview"
+        header="Account Engagement API"
+        body="Extend your B2B marketing efforts."
+        label="API"
+      >
+        <dx-button href="/docs/marketing/pardot/overview" variant="inline">Overview</dx-button>
+        <dx-button href="/docs/marketing/pardot/guide" variant="inline">Guide</dx-button>
+      </dx-card-docs>
+      <dx-card-docs href="/docs/ai/agentforce/overview" header="Agentforce"></dx-card-docs>`;
+    const entries = parseLwrCatalog(html);
+    expect(entries.map((e) => e.id).sort()).toEqual(["ai/agentforce", "marketing/pardot"]);
+    // The card's header attribute wins over the child button labels ("Overview"/"Guide").
+    expect(entries.find((e) => e.id === "marketing/pardot")!.title).toBe("Account Engagement API");
+    expect(entries.find((e) => e.id === "ai/agentforce")!.title).toBe("Agentforce");
+  });
 });
 
 describe("parseLwrToc", () => {
@@ -146,12 +165,12 @@ describe("fetchLwrToc", () => {
     const browser = { fetchTextInPage: async () => "<html></html>" } as any;
     await expect(fetchLwrToc(browser, "ai/agentforce/guide")).rejects.toThrow(/--debug/);
   });
-  it("a bare guide-root URL yields the whole doc-set TOC (all sections)", async () => {
+  it("a bare guide-root URL makes links from any section eligible (scope = guide root)", async () => {
     const browser = {
       fetchTextInPage: async () =>
         '<a href="/docs/ai/agentforce/guide/x.html">X</a><a href="/docs/ai/agentforce/references/r.html">R</a>',
     } as any;
     const toc = await fetchLwrToc(browser, "https://developer.salesforce.com/docs/ai/agentforce");
-    expect(toc).toHaveLength(2); // scope is the guide root, so every section is included
+    expect(toc).toHaveLength(2); // both sections' links pass the root scope (nav itself is hierarchical)
   });
 });

@@ -11,6 +11,10 @@ export interface LwrCatalogEntry {
 
 const DEV_ORIGIN = "https://developer.salesforce.com";
 const ANCHOR = /<a[^>]*href="(\/docs\/([a-z0-9-]+)\/([a-z0-9-]+)[^"#?]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+// The /docs/apis directory renders links on web components (<dx-card-docs>, <dx-button>),
+// NOT <a> tags (verified live). Match the href on any element; a card's `header` attribute
+// carries the guide title.
+const HREF_ELEMENT = /<([a-z][a-z0-9-]*)\b[^>]*?href="(\/docs\/([a-z0-9-]+)\/([a-z0-9-]+)[^"#?]*)"[^>]*>/gi;
 
 function anchorText(inner: string): string {
   return inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -22,14 +26,26 @@ function escapeRegExp(s: string): string {
 
 /** Extract unique <area>/<guide> roots from the /docs/apis directory page's raw SSR HTML. */
 export function parseLwrCatalog(html: string): LwrCatalogEntry[] {
+  // Title candidates per guide id: a `header="..."` attribute (dx-card-docs) beats
+  // anchor inner text, which beats the id itself.
+  const headers = new Map<string, string>();
   const seen = new Map<string, LwrCatalogEntry>();
+
+  for (const m of html.matchAll(HREF_ELEMENT)) {
+    const [full, , , area, guide] = m;
+    const id = `${area}/${guide}`;
+    const header = /\bheader="([^"]+)"/i.exec(full)?.[1];
+    if (header && !headers.has(id)) headers.set(id, header);
+    if (!seen.has(id)) seen.set(id, { id, title: id, url: `${DEV_ORIGIN}/docs/${id}` });
+  }
   for (const m of html.matchAll(ANCHOR)) {
     const [, , area, guide, inner] = m;
     const id = `${area}/${guide}`;
-    if (!seen.has(id)) {
-      seen.set(id, { id, title: anchorText(inner) || id, url: `${DEV_ORIGIN}/docs/${id}` });
-    }
+    const text = anchorText(inner);
+    if (text && !headers.has(id)) headers.set(id, text);
+    if (!seen.has(id)) seen.set(id, { id, title: id, url: `${DEV_ORIGIN}/docs/${id}` });
   }
+  for (const e of seen.values()) e.title = headers.get(e.id) ?? e.id;
   return [...seen.values()];
 }
 
@@ -87,9 +103,11 @@ export async function listLwrCatalog(browser: BrowserManager): Promise<LwrCatalo
 
 /**
  * target: "<area>/<guide>" shorthand or a full /docs/... URL.
- * Scope follows the given depth: a section target (ai/agentforce/guide) returns that
- * section's nav; a bare guide root (ai/agentforce, the shape catalog entries carry)
- * returns the whole doc set's TOC across all sections.
+ * The LWR nav is hierarchical: a page's SSR HTML carries only its local nav level
+ * (top-level sections at a guide root, sibling/child pages deeper in). To explore,
+ * drill down — run toc again on an entry's URL to expand that section. Scope follows
+ * the given depth: a section target (ai/agentforce/guide) matches that section's
+ * links; a bare guide root (ai/agentforce) makes links from any section eligible.
  */
 export async function fetchLwrToc(browser: BrowserManager, target: string): Promise<TocEntry[]> {
   let guidePath: string;
