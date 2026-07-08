@@ -16,18 +16,19 @@ function readJson(relPath: string): any {
 // cli/package.json is the source of truth (it's what `sf-docs --version` reports).
 const cliVersion: string = readJson("../package.json").version;
 
-// Every place the plugin/CLI version is declared across both ecosystems.
+// Every place the plugin/CLI version is declared. A single .claude-plugin/plugin.json
+// manifest and a single repo-root skills/ dir serve both the Claude Code and GitHub
+// Copilot marketplaces (each ecosystem's marketplace.json just points "source": "./"
+// at the repo root), so there's no separate .github/plugin.json to keep in sync.
 const versionSources: Array<[string, string]> = [
   [".claude-plugin/plugin.json", readJson("../../.claude-plugin/plugin.json").version],
   [".claude-plugin/marketplace.json → plugins[0]", readJson("../../.claude-plugin/marketplace.json").plugins[0].version],
-  [".github/plugin.json", readJson("../../.github/plugin.json").version],
   [".github/plugin/marketplace.json → metadata", readJson("../../.github/plugin/marketplace.json").metadata.version],
   [".github/plugin/marketplace.json → plugins[0]", readJson("../../.github/plugin/marketplace.json").plugins[0].version],
 ];
 
 // Skill directories (those containing a SKILL.md) discovered dynamically rather than
-// from a hardcoded list, so a newly added skill is automatically covered and an
-// orphaned mirror (a .github skill with no .claude source, or vice versa) is caught.
+// from a hardcoded list, so a newly added skill is automatically covered.
 function skillDirs(relRoot: string): string[] {
   return readdirSync(abs(relRoot), { withFileTypes: true })
     .filter((e) => e.isDirectory() && existsSync(abs(`${relRoot}/${e.name}/SKILL.md`)))
@@ -35,8 +36,7 @@ function skillDirs(relRoot: string): string[] {
     .sort();
 }
 
-const claudeSkills = skillDirs("../../.claude/skills");
-const githubSkills = skillDirs("../../.github/skills");
+const shippedSkills = skillDirs("../../skills");
 
 describe("manifest versions stay in sync", () => {
   it("cli/package.json has a semver version", () => {
@@ -48,22 +48,9 @@ describe("manifest versions stay in sync", () => {
   });
 });
 
-describe("shared skills stay mirrored", () => {
+describe("shipped skills", () => {
   it("discovers the shipped skills", () => {
-    expect(claudeSkills).toContain("sf-docs");
-    expect(claudeSkills.length).toBeGreaterThanOrEqual(1);
+    expect(shippedSkills).toContain("sf-docs");
+    expect(shippedSkills.length).toBeGreaterThanOrEqual(1);
   });
-
-  it("the .claude/skills and .github/skills sets match (no orphan mirror either way)", () => {
-    expect(githubSkills).toEqual(claudeSkills);
-  });
-
-  it.each(claudeSkills)(
-    "the .github/skills/%s mirror is identical to the .claude/skills source",
-    (skill) => {
-      const source = readText(`../../.claude/skills/${skill}/SKILL.md`);
-      const mirror = readText(`../../.github/skills/${skill}/SKILL.md`);
-      expect(mirror).toBe(source);
-    },
-  );
 });
