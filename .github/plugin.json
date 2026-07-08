@@ -5,5 +5,5 @@
   "author": { "name": "ehartye" },
   "license": "MIT",
   "keywords": ["salesforce", "documentation", "apex", "lwc", "trailhead"],
-  "skills": ["./skills/sf-docs"]
+  "skills": ["./skills"]
 }
