@@ -26,4 +26,17 @@ describe.skipIf(!process.env.SF_DOCS_LIVE)("BrowserManager (live)", () => {
       await bm.close();
     }
   }, 60_000);
+
+  it("captures a Knowledge Article record via Aura XHR intercept (type=1)", async () => {
+    const bm = new BrowserManager({});
+    try {
+      const record = await bm.captureArticleRecord(
+        "https://help.salesforce.com/s/articleView?id=000383103&type=1&language=en_US",
+      );
+      expect(record.title).toMatch(/Automated Process/i);
+      expect(typeof record.resolution).toBe("string");
+    } finally {
+      await bm.close();
+    }
+  }, 60_000);
 });

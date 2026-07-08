@@ -207,6 +207,48 @@ export class BrowserManager {
     }
   }
 
+  /**
+   * Load a Knowledge Article page (help.salesforce.com articleView?type=1 — this is
+   * also where Known Issues live) and capture its record from the Aura XHR response.
+   * The article body never reaches the DOM in a stable, selector-addressable form (it's
+   * assembled client-side from this same JSON), so this reads the source data directly
+   * instead of rendering + extracting. Response shape: an outer `{actions:[{returnValue}]}`
+   * envelope whose `returnValue.returnValue` is `{ type: "KBKnowledgeArticle", record: {...} }`.
+   */
+  async captureArticleRecord(url: string): Promise<Record<string, any>> {
+    const page = await this.page();
+    let record: Record<string, any> | undefined;
+    page.on("response", async (res) => {
+      if (record || !res.url().includes("/sfsites/aura")) return;
+      try {
+        const outer = JSON.parse(await res.text());
+        for (const action of outer?.actions ?? []) {
+          const rv = action?.returnValue?.returnValue;
+          if (rv?.type === "KBKnowledgeArticle" && rv?.record) {
+            record = rv.record;
+            break;
+          }
+        }
+      } catch {
+        // Non-JSON, or not the action we're looking for — keep waiting.
+      }
+    });
+    try {
+      try {
+        await page.goto(url, { waitUntil: "networkidle", timeout: 45_000 });
+      } catch {
+        // networkidle can time out on background telemetry XHR; tolerate it if we
+        // still captured the record below.
+      }
+      // Poll up to ~15s for the record-bearing Aura response to arrive.
+      for (let i = 0; i < 30 && !record; i++) await page.waitForTimeout(500);
+      if (!record) throw new Error(`Could not capture Knowledge Article record for ${url}`);
+      return record;
+    } finally {
+      await page.close();
+    }
+  }
+
   async close(): Promise<void> {
     await this.browser?.close(); // closes the context and all pages with it
     this.browser = undefined;
