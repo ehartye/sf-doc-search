@@ -2,14 +2,14 @@
   "name": "sf-doc-search-marketplace",
   "owner": { "name": "ehartye" },
   "metadata": {
-    "description": "Clean Salesforce documentation retrieval for GitHub Copilot.",
+    "description": "Fetch clean, official Salesforce documentation from official sources for GitHub Copilot — use in place of WebFetch for Salesforce doc URLs.",
     "version": "0.6.0"
   },
   "plugins": [
     {
       "name": "sf-doc-search",
       "source": "./",
-      "description": "Clean Salesforce documentation retrieval (dev docs, Help, Trailhead, release notes) via the sf-docs CLI + skill.",
+      "description": "Fetch clean, official Salesforce documentation (dev docs, Help, Trailhead, release notes) from official sources via the sf-docs CLI + skill — use in place of WebFetch for Salesforce doc URLs.",
       "version": "0.6.0",
       "author": { "name": "ehartye" }
     }

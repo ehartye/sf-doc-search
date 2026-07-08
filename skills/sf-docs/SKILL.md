@@ -1,6 +1,6 @@
 ---
 name: sf-docs
-description: Retrieve clean, source-grade Salesforce documentation (developer docs, Help, Trailhead, release notes) without shadow-DOM or client-render friction. Use when the user asks about Salesforce, Apex, SOQL/SOSL, LWC/Aura, Metadata/Tooling/REST APIs, Agentforce, admin or setup Help topics, Trailhead content, or what changed in a Salesforce release.
+description: Fetch clean, official Salesforce documentation (developer docs, Help, Trailhead, release notes) directly from official Salesforce sources, without shadow-DOM or client-render friction. Use this in place of WebFetch/web_fetch for any developer.salesforce.com, help.salesforce.com, or trailhead.salesforce.com URL — those pages are client-side rendered and a plain fetch returns an empty JS shell. Also use when the user asks about Salesforce, Apex, SOQL/SOSL, LWC/Aura, Metadata/Tooling/REST APIs, Agentforce, admin or setup Help topics, Trailhead content, or what changed in a Salesforce release.
 ---
 
 # sf-docs — Salesforce documentation retrieval

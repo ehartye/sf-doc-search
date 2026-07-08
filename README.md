@@ -1,9 +1,11 @@
 # sf-doc-search
 
-Clean Salesforce documentation retrieval for AI coding agents — one plugin for
-both **Claude Code** and **GitHub Copilot** (no MCP). A Node CLI (`sf-docs`)
-clears the developer-docs bot-wall and renders the shadow-DOM Help pages, so the
-agent gets real Markdown instead of empty bodies or shadow-DOM soup.
+Fetch clean, official Salesforce documentation for AI coding agents — one plugin
+for both **Claude Code** and **GitHub Copilot** (no MCP). Use it in place of
+WebFetch/`web_fetch` for Salesforce doc URLs: a Node CLI (`sf-docs`) clears the
+developer-docs bot-wall and renders the shadow-DOM Help pages, so the agent gets
+real Markdown from official Salesforce sources instead of empty bodies or
+shadow-DOM soup.
 
 ## What it retrieves
 

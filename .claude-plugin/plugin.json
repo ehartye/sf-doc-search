@@ -1,7 +1,7 @@
 {
   "name": "sf-doc-search",
   "version": "0.6.0",
-  "description": "Retrieve clean Salesforce documentation (dev docs, Help, Trailhead, release notes) without shadow-DOM/render friction.",
+  "description": "Fetch clean, official Salesforce documentation (dev docs, Help, Trailhead, release notes) from official Salesforce sources — use in place of WebFetch for Salesforce doc URLs, which are client-side rendered and return empty content otherwise.",
   "author": { "name": "ehartye" },
   "homepage": "https://github.com/ehartye/sf-doc-search",
   "repository": "https://github.com/ehartye/sf-doc-search",
