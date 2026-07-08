@@ -28,46 +28,42 @@ agent gets real Markdown instead of empty bodies or shadow-DOM soup.
 /plugin install sf-doc-search@sf-doc-search-marketplace
 ```
 
-Then build the bundled CLI once (or `npm i -g sf-docs`):
+Then build the bundled CLI once:
 
 ```
-cd cli && npm install && npm run build
+cd "${CLAUDE_PLUGIN_ROOT}/cli" && npm install && npm run build
 ```
 
 ## Install — GitHub Copilot / VS Code
 
-First install the CLI: `npm i -g sf-docs` (or rely on `npx sf-docs`). Then pick a
-distribution path:
+Pick a distribution path:
 
-**A. Agent Skill (simplest, well-supported).** Copilot (CLI, coding/cloud agent,
-code review, and agent mode in VS Code / JetBrains) auto-discovers the skill.
-
-- Install from this repo: `gh skill install ehartye/sf-doc-search sf-docs`
-  (requires GitHub CLI ≥ 2.90.0; preview with `gh skill preview ehartye/sf-doc-search sf-docs`).
-- Or drop the repo into your workspace — Copilot scans both `.github/skills/` and
-  `.claude/skills/`, and this repo ships the skill in both.
-
-**B. Agent Plugin marketplace (Preview).** This repo also exposes a Copilot plugin
-marketplace (`.github/plugin.json` + `.github/plugin/marketplace.json`, which use
-the same schema as the Claude Code marketplace):
+**A. Agent Plugin marketplace (recommended).** A single plugin manifest
+(`.claude-plugin/plugin.json`) and a repo-root `skills/` dir back both this
+marketplace and the Claude Code one above — `cli/` and `bin/` ship with the
+install, so no separate global CLI install is required:
 
 ```
-copilot plugin marketplace browse ehartye/sf-doc-search
+copilot plugin marketplace add ehartye/sf-doc-search
 copilot plugin install sf-doc-search@sf-doc-search-marketplace
 ```
 
-> **Preview caveat:** Copilot Agent Plugins are a preview feature and the exact
-> manifest location (plugin root vs `.github/`) is still stabilizing. If
-> `copilot plugin install` can't resolve the manifest, fall back to path **A**
-> (`gh skill install`), which is fully supported, and adjust the manifest paths to
-> match your installed `copilot` CLI version.
+Then build the bundled CLI once:
 
-> **Maintainers:** the `.github/skills/*` files mirror `.claude/skills/*`, and the
-> CLI/plugin/marketplace versions must all match. Both are enforced by
+```
+cd "${PLUGIN_ROOT}/cli" && npm install && npm run build
+```
+
+**B. Agent Skill only.** If you just want the skill (no bundled CLI), install it
+directly: `gh skill install ehartye/sf-doc-search sf-docs` (requires GitHub CLI
+≥ 2.90.0; preview with `gh skill preview ehartye/sf-doc-search sf-docs`). You'll
+still need the CLI itself — clone this repo and `cd cli && npm install && npm run
+build`, or run it via `npx` from a local checkout.
+
+> **Maintainers:** the CLI/plugin/marketplace versions must all match. Enforced by
 > `cli/test/versions-in-sync.test.ts` (part of `npm test`), so drift fails the suite.
 > When bumping the version, update `cli/package.json`, `.claude-plugin/plugin.json`,
-> `.claude-plugin/marketplace.json`, `.github/plugin.json`, and
-> `.github/plugin/marketplace.json` together.
+> `.claude-plugin/marketplace.json`, and `.github/plugin/marketplace.json` together.
 
 ## Verify the install
 

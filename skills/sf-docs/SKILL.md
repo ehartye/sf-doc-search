@@ -19,7 +19,10 @@ Only proceed once it reports ready.
 ## Invoking the CLI
 
 Run `sf-docs <command>`. If `sf-docs` is not found on PATH, run `npx sf-docs <command>`
-(in Claude Code you may also run `node "${CLAUDE_PLUGIN_ROOT}/cli/dist/index.js" <command>`).
+from a built `cli/` directory, or invoke the bundled copy directly:
+`node "${CLAUDE_PLUGIN_ROOT:-$PLUGIN_ROOT}/cli/dist/index.js" <command>` (Claude Code
+sets `CLAUDE_PLUGIN_ROOT`, Copilot sets `PLUGIN_ROOT` — both point at the same
+installed plugin directory, which ships `cli/`).
 
 ## Decision flow
 

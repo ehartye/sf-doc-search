@@ -7,5 +7,5 @@
   "repository": "https://github.com/ehartye/sf-doc-search",
   "license": "MIT",
   "keywords": ["salesforce", "documentation", "apex", "lwc", "trailhead"],
-  "skills": ["./.claude/skills"]
+  "skills": "skills/"
 }
