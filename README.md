@@ -13,6 +13,10 @@ agent gets real Markdown instead of empty bodies or shadow-DOM soup.
   other `developer.salesforce.com/docs/<area>/<guide>` doc sets) via server-rendered
   HTML — catalog, hierarchical toc, and fetch.
 - **Salesforce Help** (admin/setup) via headless render, boilerplate stripped.
+- **Known Issues & Knowledge Articles** (`articleView?...&type=1`) via Aura record
+  intercept — these don't render their body in the DOM, so headless render alone
+  returns nothing usable; `fetch` auto-detects `type=1` and reads the record
+  (Summary, Description, Resolution/workaround, Additional Resources) directly.
 - **Release notes** via headless render + Coveo search.
 - **Trailhead** modules/units via render.
 
@@ -117,7 +121,9 @@ All source paths work end-to-end against live Salesforce:
   (merged with Atlas, platform-tagged), `toc` (hierarchical drill-down).
 - **Component library** — `component <ns> <name>` (cx-router JSON).
 - **Salesforce Help** — `fetch` of articles (shadow-DOM body extracted) and
-  `search --source help` (Coveo discovery).
+  `search --source help` (Coveo discovery, includes Known Issues/Knowledge Articles).
+- **Known Issues / Knowledge Articles** — `fetch` of `type=1` articleView URLs
+  (Aura record intercept; verified against a live Known Issue).
 - **Release notes** — `fetch` + `search --source release`.
 - **Trailhead** — `fetch` of module/unit pages.
 

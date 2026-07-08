@@ -1,4 +1,4 @@
-import type { RouteResult, AtlasRef, ComponentRef, Source } from "./types";
+import type { RouteResult, AtlasRef, ComponentRef } from "./types";
 
 const ATLAS_LONG = /^atlas\.([a-z-]+)\.(?:(\d+\.\d+)\.)?([a-z0-9_]+)\.meta$/i;
 
@@ -78,8 +78,17 @@ export function route(input: string): RouteResult {
 
   if (host === "help.salesforce.com") {
     const id = u.searchParams.get("id") ?? "";
-    const source: Source = id.startsWith("release-notes.") ? "release" : "help";
-    // Normalize any Help URL (e.g. Coveo's Help_DocContent clickUri, whose id lacks
+    if (id.startsWith("release-notes.")) {
+      return { source: "release", url: trimmed };
+    }
+    // type=1 is a Knowledge Article (Known Issues live here too) — a different Lightning
+    // component than the type=5 standard doc page, whose body never lands in the DOM;
+    // it must be read from the Aura record XHR instead (see sources/knowledge.ts).
+    // Preserve the URL as-is: forcing type=5 below would silently fetch the wrong page.
+    if (u.searchParams.get("type") === "1") {
+      return { source: "knowledge", url: trimmed };
+    }
+    // Normalize any other Help URL (e.g. Coveo's Help_DocContent clickUri, whose id lacks
     // the .htm suffix) to the canonical Lightning articleView URL, the only form
     // that renders the article body.
     let url = trimmed;
@@ -90,7 +99,7 @@ export function route(input: string): RouteResult {
         `https://help.salesforce.com/s/articleView?id=${htmId}&type=5&language=en_US` +
         (release ? `&release=${release}` : "");
     }
-    return { source, url };
+    return { source: "help", url };
   }
 
   if (host === "releasenotes.docs.salesforce.com") {

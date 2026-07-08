@@ -8,6 +8,7 @@ describe("route", () => {
     ["https://developer.salesforce.com/docs/component-library/bundle/lightning-button", "component"],
     ["https://developer.salesforce.com/docs/component-library/documentation/en/lightning-component-reference", "component"],
     ["https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules&type=5", "help"],
+    ["https://help.salesforce.com/s/articleView?id=000383103&type=1&language=en_US", "knowledge"],
     ["https://help.salesforce.com/s/articleView?id=release-notes.salesforce_release_notes.htm&type=5", "release"],
     ["https://releasenotes.docs.salesforce.com/en-us/summer26/release-notes/salesforce_release_notes.htm", "release"],
     ["https://trailhead.salesforce.com/content/learn/modules/apex_basics_dotnet", "trailhead"],
@@ -48,6 +49,21 @@ describe("route", () => {
     expect(r.url).toBe(
       "https://help.salesforce.com/s/articleView?id=platform.security_about_sharing_rules.htm&type=5&language=en_US",
     );
+  });
+
+  it("preserves a type=1 Knowledge Article URL unmodified instead of coercing it to type=5", () => {
+    // Regression: the .htm/type=5 normalization above is for type=5 doc pages only.
+    // type=1 (Knowledge Article / Known Issue) content lives in an Aura XHR response,
+    // not the DOM, so rewriting the URL to type=5 silently fetches the wrong page.
+    const input = "https://help.salesforce.com/s/articleView?id=000383103&type=1&language=en_US";
+    const r = route(input);
+    expect(r.source).toBe("knowledge");
+    expect(r.url).toBe(input);
+  });
+
+  it("routes release-notes ids to release even if type=1 is present", () => {
+    const r = route("https://help.salesforce.com/s/articleView?id=release-notes.salesforce_release_notes.htm&type=1");
+    expect(r.source).toBe("release");
   });
 
   it("keeps hyphens in multi-word component names", () => {

@@ -4,6 +4,7 @@ export type Source =
   | "component"    // LWC/Aura component library (cx-router)
   | "help"         // help.salesforce.com article (shadow DOM)
   | "release"      // release notes (Help article, release-notes.* id)
+  | "knowledge"    // help.salesforce.com Knowledge Article / Known Issue (type=1, Aura record intercept)
   | "trailhead"    // trailhead.salesforce.com learn content
   | "generic";     // any other host -> readability render
 

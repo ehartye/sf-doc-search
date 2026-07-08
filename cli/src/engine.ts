@@ -5,6 +5,7 @@ import { Cache, type CacheOptions } from "./cache";
 import { fetchAtlasDoc, listCatalog, fetchToc, type CatalogEntry, type TocEntry } from "./sources/atlas";
 import { fetchComponent } from "./sources/component";
 import { fetchHelp } from "./sources/help";
+import { fetchKnowledgeArticle } from "./sources/knowledge";
 import { fetchTrailhead } from "./sources/trailhead";
 import { fetchLwr, listLwrCatalog, fetchLwrToc, fetchLwrTocDeep } from "./sources/lwr";
 import { coveoSearch, type CoveoResult, type CoveoSource } from "./coveo";
@@ -34,6 +35,9 @@ export class Engine {
       case "help":
       case "release":
         result = await fetchHelp(this.browser, r.url, r.source);
+        break;
+      case "knowledge":
+        result = await fetchKnowledgeArticle(this.browser, r.url);
         break;
       case "trailhead":
         result = await fetchTrailhead(this.browser, r.url);

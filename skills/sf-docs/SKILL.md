@@ -47,7 +47,13 @@ installed plugin directory, which ships `cli/`).
    - `sf-docs search "<query>" --source help` → `sf-docs fetch "<top result url>"`.
 4. **"What changed in <release>" (release notes):**
    - `sf-docs search "<query>" --source release` → `sf-docs fetch "<top result url>"`.
-5. **Anything else / unsure** → web-search restricted to the Salesforce doc domains,
+5. **Known issue / bug / regression / unexpected error behavior:**
+   - `sf-docs search "<query>" --source help` also covers Salesforce's Known Issues
+     tracker — it's a Knowledge Article type served from help.salesforce.com
+     (`articleView?...&type=1`), not a separate site. Fetch the result normally;
+     `sf-docs fetch` auto-detects `type=1` and reads it correctly (Summary,
+     Description, Resolution/workaround, Additional Resources).
+6. **Anything else / unsure** → web-search restricted to the Salesforce doc domains,
    then fetch the best 1–3 URLs:
    `site:developer.salesforce.com OR site:help.salesforce.com OR site:trailhead.salesforce.com <query>`
    then `sf-docs fetch "<url>"` for each.
